@@ -1,3 +1,5 @@
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localMode } from './local-mode.ts'
 // Server-only account metadata and authoritative chat ownership; no OAuth tokens.
 // @ts-expect-error Node strip-types tests require the source extension.
 import { validSessionId } from './session-id.ts'
@@ -39,6 +41,11 @@ function decodeSessionCursor(value?: string | null): SessionCursor | null {
 // across HTTP calls: writes needing atomicity are expressed as one SQL statement.
 export async function withAccountDatabase<T>(work: (query: AccountQuery) => Promise<T>, { timeoutMs }: { timeoutMs?: number } = {}): Promise<T> {
   if (typeof window !== 'undefined') throw new Error('Accounts are server only')
+  if (localMode()) {
+    const { localDatabase } = await import('./local-database')
+    const db = await localDatabase()
+    return work(async (text, values = []) => (await db.query<Record<string, unknown>>(text, values)).rows)
+  }
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) throw new Error('DATABASE_URL is required')
   const { neon } = await import('@neondatabase/serverless')

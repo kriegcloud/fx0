@@ -1,3 +1,5 @@
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localMode, localSession, assertLocalRequest } from './local-mode.ts'
 import { NextRequest } from 'next/server.js'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { needsTokenRefresh, refreshAccessToken, sessionWithRefresh } from './auth.ts'
@@ -14,6 +16,15 @@ type SessionHandler = (request: Request, session: Partial<SessionData>) => Respo
 // read identity, and login/logout own selector changes.
 export function withRequestSession(body: SessionHandler) {
   return async (request: Request): Promise<Response> => {
+    if (localMode()) {
+      try {
+        assertLocalRequest(request)
+        if (!['GET', 'HEAD'].includes(request.method) && request.headers.get('origin') !== process.env.APP_URL) {
+          return Response.json({ error: 'Cross-origin request denied' }, { status: 403 })
+        }
+      } catch { return Response.json({ error: 'Local access denied' }, { status: 403 }) }
+      return body(request, localSession())
+    }
     const cookies: SessionCookie[] = []
     let response: Response
     try {

@@ -97,6 +97,7 @@ export default function AccountMenu({ user, team = null, onSignOut, signOutStatu
   )
 
   if (!user) return signIn()
+  if (user.id === 'local:workstation') return <div className={`${rowClass} flex items-center text-foreground-secondary`}>CLIProxyAPI subscriptions</div>
 
   return (
     <Popover modal open={open} onOpenChange={setOpen}>

@@ -1,3 +1,5 @@
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localMode, localSession } from './local-mode.ts'
 import { Redis } from '@upstash/redis'
 import { sealData, unsealData } from 'iron-session'
 // @ts-expect-error Node strip-types tests require the source extension.
@@ -14,6 +16,7 @@ import { loginRevoked } from './turn-credential.ts'
 // Pages read identity here. A signed-out login's grant is no session, even
 // replayed from a copy: sign-out records the revocation before it answers.
 export async function requireUserSession(): Promise<SessionData> {
+  if (localMode()) return localSession()
   const session = await getSession()
   if (!isAuthenticatedSession(session) || await loginRevoked(session.loginId)) throw new AuthError()
   return session

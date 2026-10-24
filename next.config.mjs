@@ -4,7 +4,7 @@ import { withBotId } from 'botid/next/config'
 const nextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  serverExternalPackages: ['libfx'],
+  serverExternalPackages: ['libfx', '@electric-sql/pglite'],
   turbopack: {
     root: import.meta.dirname,
     // class-variance-authority still imports clsx; resolve it to cn so the bundle

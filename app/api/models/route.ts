@@ -1,3 +1,4 @@
+import { localMode, proxyBaseUrl } from '../../../lib/local-mode'
 import { connection } from 'next/server.js'
 import { featuredModels } from '../../../lib/featured-models'
 import { DEFAULT_MODEL } from '../../../lib/session'
@@ -31,7 +32,8 @@ export async function GET() {
     return Response.json({ ...cache.catalog, defaultModel }, SHARED)
   }
   try {
-    const response = await fetch('https://ai-gateway.vercel.sh/coding-agent/v1/models', {
+    const response = await fetch(localMode() ? `${proxyBaseUrl()}/models` : 'https://ai-gateway.vercel.sh/coding-agent/v1/models', {
+      ...(localMode() ? { headers: { authorization: `Bearer ${process.env.FX0_PROXY_API_KEY || ''}` } } : {}),
       cache: 'no-store', signal: AbortSignal.timeout(15_000),
     })
     if (!response.ok) {
@@ -44,7 +46,9 @@ export async function GET() {
     const entries: { id: string; released?: number }[] = []
     for (const model of payload.data ?? []) {
       if (typeof model.id !== 'string' || (typeof model.type === 'string' && model.type.toLowerCase() !== 'language')) continue
+      if (localMode() && (!/^(gpt-|claude-|grok-)/.test(model.id) || /image|video|tts|voice/.test(model.id))) continue
       catalog.models.push(model.id)
+      if (localMode() && model.id.startsWith('gpt-')) catalog.efforts[model.id] = ['low', 'medium', 'high']
       entries.push({ id: model.id, released: typeof model.released === 'number' ? model.released : undefined })
       const values = model.reasoning_options?.find((option) => option.type === 'effort')?.values
       if (values?.length) catalog.efforts[model.id] = values
@@ -52,7 +56,7 @@ export async function GET() {
     }
     catalog.models = [...new Set(catalog.models)].sort()
     catalog.fast = [...new Set(catalog.fast)]
-    catalog.featured = featuredModels(entries)
+    catalog.featured = localMode() ? ['gpt-6.1-sol', 'claude-opus-5-5', 'claude-sonnet-5-5', 'grok-4.7'].filter(id => catalog.models.includes(id)) : featuredModels(entries)
     cache = { at: Date.now(), catalog }
     return Response.json({ ...catalog, defaultModel }, SHARED)
   } catch {

@@ -18,9 +18,12 @@
     "test:budget:integration": "node --experimental-strip-types --test tests/turn-budget.integration.mjs",
     "test:turns:integration": "node --experimental-strip-types --test tests/turn-work.integration.mjs",
     "test:trial:integration": "node --experimental-strip-types --test tests/trial.integration.mjs",
-    "test:credential:integration": "node --experimental-strip-types --test tests/turn-credential.integration.mjs"
+    "test:credential:integration": "node --experimental-strip-types --test tests/turn-credential.integration.mjs",
+    "dev:local": "node --env-file-if-exists=.env.local scripts/local-dev.mjs",
+    "test:local": "node --experimental-strip-types --test tests/local-mode.test.mjs tests/reference-files.test.mjs"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-popover": "^1.1.23",
@@ -40,7 +43,9 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "redis": "^6.3.0",
+    "remark-gfm": "^4.0.1",
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": "24.x"

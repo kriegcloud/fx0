@@ -1,3 +1,4 @@
+import { localMode, proxyOptions } from './local-mode'
 import { createHash, randomUUID } from 'node:crypto'
 import { createFxAgent, createFxEngine, type FxAgent, type FxAgentHostTool, type FxEffort, type FxHostTool, type FxSession, type FxToolContext } from 'libfx'
 import { createTools, type ToolHost } from './tools'
@@ -42,7 +43,8 @@ export interface ChatRuntime {
 // carries. A retry or a crash's resend of a step carries the same conversation, so
 // it has the same name; every new step, even after compaction, has a new one.
 export function modelStepName(sender: string, body: unknown): string {
-  const prompt = (body as { prompt?: unknown } | null)?.prompt
+  const request = body as { prompt?: unknown; messages?: unknown } | null
+  const prompt = request?.prompt ?? request?.messages
   // An unreadable conversation counts as a step of its own, never as a resend.
   if (!Array.isArray(prompt)) return `${sender}:unread:${randomUUID()}`
   return `${sender}:${createHash('sha256').update(JSON.stringify(prompt)).digest('base64url').slice(0, 22)}`
@@ -62,7 +64,8 @@ function requestJson(body: unknown): unknown {
 // last user message, plus this one. It needs no state, so it holds even where the
 // turn's shared budget (turn-budget.ts) is unknown or lost.
 export function turnModelStep(body: unknown): number {
-  const prompt = (body as { prompt?: unknown })?.prompt
+  const request = body as { prompt?: unknown; messages?: unknown } | null
+  const prompt = request?.prompt ?? request?.messages
   if (!Array.isArray(prompt)) return 1
   let steps = 1
   for (let index = prompt.length - 1; index >= 0; index--) {
@@ -105,7 +108,7 @@ function chatFetch(
     const id = await chatId()
     const url = new URL(input instanceof Request ? input.url : String(input))
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
-    const modelRequest = method === 'POST' && url.pathname.endsWith('/language-model')
+    const modelRequest = method === 'POST' && (url.pathname.endsWith('/language-model') || url.pathname.endsWith('/chat/completions'))
     const body = modelRequest ? requestJson(init?.body) : null
     const limited = () => {
       log(id ?? 'unknown', 'turn:step-limit', { steps: MAX_TURN_MODEL_STEPS, sender: sender === 'parent' ? 'parent' : 'subagent' })
@@ -134,6 +137,19 @@ function chatFetch(
       observer = draft
     }
     try {
+      if (localMode()) {
+        // libfx custom providers do not advertise reasoning levels. Set the
+        // proxy's OpenAI field at the transport edge instead of engine validation.
+        if (modelRequest && body && typeof body === 'object') {
+          const request = body as { model?: string; reasoning_effort?: string }
+          if (request.model?.startsWith('gpt-')) {
+            const active = id ? await getActiveTurn(id) : null
+            request.reasoning_effort = active?.settings?.effort || process.env.FX0_EFFORT || 'medium'
+          }
+          return await fetch(input, { ...init, body: JSON.stringify(request) })
+        }
+        return await fetch(input, init)
+      }
       return await gatewayFetch(gateway, fetch, observer)(input, init)
     } catch (error) {
       // No stored credential, or one too close to expiry to start a request.
@@ -157,7 +173,7 @@ async function chatOfRequest(sessionId: string | null): Promise<string | null> {
 // Reads are safe to run twice after a crash; publishing the same document twice
 // is too. Edits, questions and subagents are not, so libfx tells the model a
 // call cut off by a crash may have run instead of running it again.
-const IDEMPOTENT = new Set(['read_design', 'publish_design', 'web_fetch', 'read_tool_result', 'capability_search'])
+const IDEMPOTENT = new Set(['read_design', 'publish_design', 'web_fetch', 'read_tool_result', 'capability_search', 'list_reference_roots', 'list_reference_files', 'read_reference_file', 'search_reference_files'])
 const WRITES = new Set(['publish_design', 'edit_design'])
 
 function turnContext(ctx: FxToolContext): TurnContext {
@@ -209,7 +225,7 @@ export function durableAgent(runtime: ChatRuntime, instructions: string): FxAgen
 
     // Placeholder: chatFetch sets each request's credential, and fx0 never uses
     // libfx's environment or OIDC fallback.
-    apiKey: 'session-authenticated',
+    ...(localMode() ? proxyOptions() : { apiKey: 'session-authenticated' }),
     fetch: (input, init) => {
       const id = requestHeader(input, init, 'x-session-id')
       return chatFetch(() => chatOfRequest(id), () => drafts.turn(id))(input, init)
@@ -217,16 +233,16 @@ export function durableAgent(runtime: ChatRuntime, instructions: string): FxAgen
     onEvent: event => drafts.observe(event),
     // Hooks run synchronously before a restored engine starts its next request.
     hooks: { onEvent: event => drafts.observe(event) },
-    model: DEFAULT_MODEL,
+    model: process.env.FX0_MODEL ?? DEFAULT_MODEL,
     instructions,
-    tools: [...chatTools(runtime, true), { name: 'web_search', providerExecuted: true }],
+    tools: [...chatTools(runtime, true), ...(localMode() ? [] : [{ name: 'web_search' as const, providerExecuted: true as const }])],
   })
   return g.__fx0LibfxAgent
 }
 
 function chatModel(host: SessionState, sponsored = false) {
   if (sponsored) return { id: TRIAL_MODEL, effort: 'low' as FxEffort, fast: true }
-  return { id: effectiveModel(host), effort: effectiveEffort(host) as FxEffort, fast: effectiveFast(host) }
+  return { id: effectiveModel(host), effort: localMode() ? 'default' as FxEffort : effectiveEffort(host) as FxEffort, fast: localMode() ? false : effectiveFast(host) }
 }
 
 // The chat's settings for the turns its next prompts start.
@@ -269,10 +285,10 @@ export async function runSubagent(
   // The parent turn's settings, even if the chat's were changed since it started.
   const pinned = active?.id === turnId ? active.settings : undefined
   const engine = await createFxEngine({
-    apiKey: 'session-authenticated',
+    ...(localMode() ? proxyOptions() : { apiKey: 'session-authenticated' }),
     fetch: chatFetch(async () => chatId, () => turnId, `subagent:${crypto.randomUUID()}`),
     model: pinned
-      ? { id: pinned.model, effort: pinned.effort as FxEffort, fast: pinned.fast }
+      ? { id: pinned.model, effort: localMode() ? 'default' as FxEffort : pinned.effort as FxEffort, fast: localMode() ? false : pinned.fast }
       : chatModel(host, funding.ok && 'kind' in funding.credential),
     instructions,
     tools: [
@@ -284,7 +300,7 @@ export async function runSubagent(
           }
         },
       })),
-      { name: 'web_search', providerExecuted: true },
+      ...(localMode() ? [] : [{ name: 'web_search' as const, providerExecuted: true as const }]),
     ],
   })
   try {

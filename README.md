@@ -6,6 +6,92 @@ fx0 is also a working example of an app built on libfx. [One `createFxAgent()` c
 
 Try it at [fx0.vercel.dev](https://fx0.vercel.dev), or clone it and make it your own.
 
+## Run on this workstation with CLIProxyAPI
+
+Install dependencies with `bun install`, then run:
+
+```sh
+bun run dev:local
+```
+
+Open **http://127.0.0.1:3000**. This explicit, single-user local mode uses your
+existing CLIProxyAPI subscriptions without Vercel sign-in, Neon, or Upstash.
+`redis-server` (Valkey is compatible) must be on PATH. The launcher checks the
+proxy before starting the app and binds Next.js and the Redis HTTP adapter to
+loopback. Keep using the `127.0.0.1` URL, including its port.
+
+The default proxy is `http://127.0.0.1:8317/v1`. The launcher reads its client
+API key from `~/.cli-proxy-api/config.yaml` in memory; it never prints the key
+or puts it into browser code. CLIProxyAPI must already be running and signed
+into the subscriptions you want to use. Its existing service and configuration
+are managed separately from fx0.
+
+New chats default to **gpt-6.1-sol with medium reasoning**. The picker lists the
+proxy's Claude, GPT, and Grok text models and excludes image, video, and speech
+models. GPT reasoning choices are sent as OpenAI `reasoning_effort`; libfx's
+custom provider does not advertise them itself. Fast mode and Gateway's
+provider-executed web search are unavailable in local mode. The agent can still
+fetch public pages and publish/edit designs. Other advertised models depend on
+your proxy's current account access and quotas.
+
+Chat ownership/history use PGlite (local Postgres), and the existing journal runs
+against a dedicated Redis/Valkey child through an authenticated local HTTP
+adapter. Data, encrypted turn identity records, the session encryption secret,
+and libfx sessions live in the gitignored `.local/` directory. Redis uses an
+append-only log with one-second syncing. Ctrl-C stops this launcher's app and
+Redis process; rerunning the command reopens the saved chats.
+
+Optional settings, supplied as environment variables or in `.env.local`:
+
+| Setting | Default |
+| --- | --- |
+| `FX0_PROXY_BASE_URL` | `http://127.0.0.1:8317/v1` (loopback HTTP only) |
+| `FX0_PROXY_CONFIG` | `~/.cli-proxy-api/config.yaml` |
+| `FX0_PROXY_API_KEY` | Read from the config's `api-keys` list |
+| `FX0_MODEL` | `gpt-6.1-sol` |
+| `FX0_EFFORT` | `medium` |
+| `FX0_LOCAL_PORT` | `3000` |
+| `FX0_LOCAL_DATA_DIR` | `.local` |
+| `FX0_REFERENCE_ROOTS` | JSON array containing `~/YeeBois/projects/beep-effect/packages/foundation/ui-system` |
+
+Local mode is for one trusted workstation user. It rejects foreign request
+hosts/origins and cannot be enabled on Vercel. The ordinary `bun run dev` and
+hosted deployment continue to use the Vercel setup below.
+
+## Local theme and branding references
+
+`bun run dev:local` gives the agent **read-only source access** to
+`~/YeeBois/projects/beep-effect/packages/foundation/ui-system` by default. That
+includes the `brand` package and `ui/src/themes`. The parent agent and its
+research subagents can list directories, search literal text, and read numbered
+file excerpts through `list_reference_roots`, `list_reference_files`,
+`search_reference_files`, and `read_reference_file`.
+
+For example, ask:
+
+> Read the brand tokens in ~/YeeBois/projects/beep-effect/packages/foundation/ui-system/brand
+> and the theme sources in ui/src/themes, then design a settings page using that visual system.
+
+To select different directories, put a JSON array of absolute paths (or paths
+starting with `~/`) into `.env.local`, then restart the launcher:
+
+```dotenv
+FX0_REFERENCE_ROOTS='["/absolute/path/to/brand", "/absolute/path/to/theme"]'
+```
+
+Set `FX0_REFERENCE_ROOTS='[]'` to disable the tools. Only configured directories
+are readable, and only in local mode. The model cannot grant itself additional
+roots. Hidden paths, credential filenames, dependency/build directories, binary
+files, and symlinks escaping the configured roots are rejected. The tools have
+no write or shell operations. Text files are limited to 1 MiB, reads are paged,
+and searches report truncation when bounded. UTF-8 SVG source is supported;
+binary images are not. The design preview still requires self-contained HTML,
+so local assets must be adapted inline rather than referenced by filesystem URL.
+
+Requested source excerpts are sent to the selected model through CLIProxyAPI
+and saved with the chat's tool results. Source files are treated as reference
+evidence, never as instructions that can change the agent's tools or permissions.
+
 ## Features
 
 - Sign in with Vercel to bill model calls through [AI Gateway](https://vercel.com/docs/ai-gateway) to your own team.

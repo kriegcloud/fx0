@@ -60,6 +60,34 @@ globalThis.__fx0Agent = {
 durableAgent({ toolHost: async () => { throw new Error('no tools here') } }, 'instructions')
 const agentFetch = agentOptions.fetch
 
+test('CLIProxyAPI transport sends pinned GPT effort and budgets OpenAI messages', async (t) => {
+  const previous = { ...process.env }
+  t.after(() => { process.env = previous; turnSteps.clear() })
+  process.env.FX0_LOCAL = '1'
+  process.env.APP_URL = 'http://127.0.0.1:3000'
+  process.env.FX0_EFFORT = 'medium'
+  delete process.env.VERCEL
+  agentOptions.hooks.onEvent({ type: 'journal.restore', sessionId: 'wrun_a', data: { resumable: true, openTurnId: 'm31' } })
+  t.mock.method(globalThis.__fx0Agent.journal, 'getActiveTurn', async () => ({ id: 31, settings: { effort: 'high' } }))
+  const seen = []
+  const network = t.mock.method(globalThis, 'fetch', async (_url, init) => {
+    seen.push(JSON.parse(init.body))
+    return Response.json({})
+  })
+  const messages = [{ role: 'user', content: 'go' }]
+  const request = (body) => agentFetch('http://127.0.0.1:8317/v1/chat/completions', {
+    method: 'POST', headers: { 'x-session-id': 'wrun_a' }, body: Buffer.from(JSON.stringify(body)),
+  })
+  assert.equal((await request({ model: 'gpt-6.1-sol', messages })).status, 200)
+  assert.equal(seen[0].reasoning_effort, 'high')
+  assert.equal(turnSteps.get('chat-a:31').size, 1)
+  assert.equal((await request({ model: 'claude-opus-5-5', messages })).status, 200)
+  assert.equal(seen[1].reasoning_effort, undefined)
+  const overLimit = [...messages, ...Array.from({ length: MAX_TURN_MODEL_STEPS }, () => ({ role: 'assistant', content: 'next' }))]
+  assert.equal((await request({ model: 'gpt-6.1-sol', messages: overLimit })).status, 400)
+  assert.equal(network.mock.callCount(), 2)
+})
+
 test('a recovered sponsored chat uses its recorded trial funding instead of requiring a customer card', async (t) => {
   const previous = { key: process.env.AI_GATEWAY_API_KEY, enabled: process.env.FX0_FREE_PROMPTS }
   process.env.AI_GATEWAY_API_KEY = 'synthetic-server-key'

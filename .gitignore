@@ -6,3 +6,6 @@ node_modules/
 .vercel
 .env*
 tsconfig.tsbuildinfo
+
+.local/
+.fx/

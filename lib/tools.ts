@@ -1,3 +1,5 @@
+// @ts-expect-error Node strip-types tests require the source extension.
+import { referenceTools } from './reference-tools.ts'
 import type { FxHostTool } from 'libfx'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { fetchPublicText } from './public-fetch.ts'
@@ -238,12 +240,12 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
     },
   }
 
-  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, webFetch, askUser, readToolResult, capabilitySearch]
+  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, webFetch, askUser, readToolResult, capabilitySearch, ...referenceTools(host)]
 
   if (allowSubagent) {
     tools.push({
       name: 'subagent',
-      description: 'Delegate a focused design or research subtask to a nested agent with the same HTML tools and no filesystem or shell access.',
+      description: 'Delegate a focused design or research subtask to a nested agent with the same design and configured read-only reference tools. No shell or filesystem writes.',
       inputSchema: {
         type: 'object',
         properties: { task: { type: 'string', description: 'Complete instructions for the subagent.' } },
