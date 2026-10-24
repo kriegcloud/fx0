@@ -14,6 +14,7 @@ const mocks = {
   'lib/trial.ts': `
     export const trialEnabled = () => !!globalThis.securityTest.trialEnabled;
     export const getGuestSession = async () => globalThis.securityTest.guest ?? null;
+    export async function clearGuestSession() { globalThis.securityTest.trace.push('clear-guest'); globalThis.securityTest.guest = null; }
     export async function createGuestSession() {
       const s = globalThis.securityTest;
       if (!s.trialEnabled) throw new Error('Trials disabled');
@@ -95,6 +96,17 @@ const mocks = {
         lastActivity: stored.lastActivity, busy: false }))
         .sort((a, b) => b.lastActivity - a.lastActivity).slice(0, 100);
     }
+    export async function readDesignAssets(id, handles) {
+      const assets = globalThis.securityTest.assets?.get(id) ?? new Map();
+      return new Map([...assets].filter(([h]) => !handles || handles.includes(h)));
+    }
+    export async function recordDesignAssets() {}
+    export const MAX_CHAT_ASSETS = 50; export const MAX_DAILY_ASSETS = 100;
+    export async function reserveDesignAssets() { return globalThis.securityTest.assetLimit ?? 'ok'; }
+    export async function releaseDesignAssets() {}
+    export async function finishDesignAssetCleanup() {}
+    export async function pendingDesignAssetCleanups() { globalThis.securityTest.trace.push('cleanup-retry'); return []; }
+    export async function queueDesignAssetCleanup() {}
     export async function readDesignArtifact(id) { record('artifact', id); return '<!doctype html><html><head><title>private design</title></head><body>private artifact</body></html>'; }
     export async function readDesignArtifactAt(id) {
       const s = record('artifact', id);
@@ -108,6 +120,7 @@ const mocks = {
       globalThis.securityTest.trace.push(name);
     }
     export async function warmChat(host) { effect('warm', host); }
+    export function assertPromptFunding() {}
     export function log() {}
     export async function submitPrompt(host, author, ...args) { effect('prompt', host); globalThis.securityTest.author = author; globalThis.securityTest.text = args[0]; globalThis.securityTest.funding = args[5]; return { id: 1, seq: globalThis.securityTest.submittedSeq ?? 1, trialChat: !!args[5] || !!globalThis.securityTest.generationOptions?.trialChat }; }
     export async function followChat(host) { effect('wake', host); }
@@ -138,9 +151,13 @@ const mocks = {
     }
   `,
   'components/chat-app.tsx': 'export default function ChatApp() {}',
+  'lib/remote-image-cache.ts': `
+    export async function cachedRemoteImage() { return 'data:image/png;base64,aW1hZ2U='; }
+  `,
 }
 registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === '@vercel/blob') return { url: 'security-test:blob', shortCircuit: true }
     if (specifier === 'botid/server') return { url: 'security-test:botid', shortCircuit: true }
     if (specifier === '@neondatabase/serverless') return { url: 'security-test:neon', shortCircuit: true }
     if (specifier === 'next/headers') return { url: 'security-test:headers', shortCircuit: true }
@@ -159,11 +176,20 @@ registerHooks({
     return next(specifier, context)
   },
   load(url, context, next) {
+    if (url === 'security-test:blob') return { format: 'module', shortCircuit: true, source: `
+      export async function get() {
+        const s = globalThis.securityTest; s.blobGets = (s.blobGets ?? 0) + 1;
+        return { statusCode: 200, stream: new Blob(['image']).stream() };
+      }
+      export async function put() { throw new Error('Unexpected Blob upload'); }
+      export async function del() {}
+      export async function list() { return { blobs: [], hasMore: false }; }
+    ` }
     if (url === 'security-test:neon') return { format: 'module', shortCircuit: true, source: `
       export function neon() { return { query: async (text, values) => globalThis.securityTest.query(text, values) }; }
     ` }
-    if (url === 'security-test:connection') return { format: 'module', shortCircuit: true, source: 'export async function connection() {} export function after() {}' }
-    if (url === 'security-test:next-server') return { format: 'module', shortCircuit: true, source: 'export function after() { globalThis.securityTest.trace.push(\'after\'); }' }
+    if (url === 'security-test:connection') return { format: 'module', shortCircuit: true, source: 'export async function connection() {} export function after(work) { globalThis.securityTest.afterTasks.push(work); }' }
+    if (url === 'security-test:next-server') return { format: 'module', shortCircuit: true, source: 'export function after(work) { globalThis.securityTest.trace.push(\'after\'); globalThis.securityTest.afterTasks.push(work); }' }
     if (url === 'security-test:headers') return { format: 'module', shortCircuit: true, source: 'export async function cookies() { return { get() {} }; } export async function headers() { return new Headers(); }' }
     if (url === 'security-test:botid') return { format: 'module', shortCircuit: true, source: 'export async function checkBotId() { globalThis.securityTest.trace.push("botid"); return { isBot: !!globalThis.securityTest.bot, isHuman: !globalThis.securityTest.bot }; }' }
     if (url === 'security-test:navigation') return { format: 'module', shortCircuit: true, source: `
@@ -191,7 +217,7 @@ const session = (extra = {}) => ({ userId: 'user_a', name: 'Verified Author', em
   accessToken: 'user-token', refreshToken: 'secret-refresh', teamId: 'team_a', teamSlug: 'a',
   loginId: 'a'.repeat(32), loginAt: Date.now(), expiresAt: Date.now() + 3600_000, isLoggedIn: true, ...extra })
 function reset(extra = {}) {
-  const state = { session: session(), trace: [], queries: [], redisReads: [], summaryCalls: [],
+  const state = { session: session(), trace: [], queries: [], redisReads: [], summaryCalls: [], afterTasks: [],
     owners: new Map([[own, 'user_a'], [foreign, 'user_b']]),
     billingTeams: new Map([[own, 'team_a'], [foreign, 'team_b']]),
     existing: new Set(), records: new Map(), deleteResult: true, ...extra }
@@ -237,7 +263,7 @@ function request(path, method = 'GET', id = own, body, origin = process.env.APP_
   return req
 }
 const routes = {}
-for (const name of ['answer', 'artifact', 'artifact-frame', 'cancel', 'debug', 'events',
+for (const name of ['answer', 'artifact', 'artifact-frame', 'artifact-image', 'cancel', 'debug', 'events',
   'credits', 'model', 'prompt', 'session', 'sessions', 'teams', 'warm']) {
   routes[name] = await import(`../app/api/${name}/route.ts`)
 }
@@ -470,9 +496,102 @@ test('the artifact preview permits iframe origins but preserves opaque credentia
   assert.match(html, /navigator\.userActivation\?\.isActive!==false/)
   assert.doesNotMatch(html, /allow-popups/)
   assert.match(html, /setAttribute\('credentialless',''\)/)
-  assert.match(html, /data:text\/html;base64/)
+  // A blob: frame, not a data: URL, which browsers refuse past 2 MiB. The design string
+  // cannot close the wrapper's script: its "<" are escaped, so only one </script> remains.
+  assert.match(html, /URL\.createObjectURL\(new Blob\(\[/)
+  assert.doesNotMatch(html, /data:text\/html/)
+  assert.equal(html.split('</script>').length - 1, 1)
+  assert.match(frame.headers.get('content-security-policy'), /frame-src blob:;/)
   assert.doesNotMatch(html, /allow-same-origin|user-token|secret-refresh/)
   assert.match(frame.headers.get('content-security-policy'), /frame-ancestors 'self'/)
+})
+
+test('the wrapper\'s image route serves only URLs artifact-frame signed for this chat, and never caches a refusal', async () => {
+  if ((process.env.SESSION_SECRET ?? '').length < 32) process.env.SESSION_SECRET = 'deterministic-route-security-secret-32+'
+  const { artifactImageSrc } = await import('../lib/artifact-image.ts')
+  const url = 'https://images.example.com/a.png'
+  // Another user's chat is refused by ownership, even with a URL validly signed for it.
+  reset()
+  const theirs = await routes['artifact-image'].GET(new Request(`https://fx0.example${artifactImageSrc(foreign, url)}`, { headers: { origin: process.env.APP_URL } }))
+  assert.equal(theirs.status, 404)
+  for (const query of ['', `&u=${encodeURIComponent(url)}`, `&u=${encodeURIComponent(url)}&sig=${'A'.repeat(43)}`,
+    `&${new URL(artifactImageSrc(foreign, url), 'https://fx0.example').searchParams.toString().replace(/^session=[^&]*&/, '')}`]) {
+    reset()
+    const response = await routes['artifact-image'].GET(new Request(`https://fx0.example/api/artifact-image?session=${own}${query}`, { headers: { origin: process.env.APP_URL } }))
+    assert.equal(response.status, 404, query || 'no URL')
+    assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  }
+})
+
+test('private attachments are kept five minutes, then revalidate ownership and the manifest; a 304 never downloads Blob bytes', async () => {
+  process.env.SESSION_SECRET ??= 'deterministic-route-security-secret-32+'
+  const { artifactImageSrc } = await import('../lib/artifact-image.ts')
+  const handle = 'AbCdEfGhIjKlMnOpQrStUvWx'
+  const path = artifactImageSrc(own, `fx0-asset:${handle}`)
+  const get = (etag) => routes['artifact-image'].GET(new Request(`https://fx0.example${path}`, {
+    headers: { origin: process.env.APP_URL, ...(etag ? { 'if-none-match': etag } : {}) },
+  }))
+  const s = reset({ assets: new Map([[own, new Map([[handle, { mimeType: 'image/png', bytes: 5 }]])]]) })
+  const first = await get()
+  assert.equal(first.status, 200)
+  assert.equal(await first.text(), 'image')
+  assert.equal(first.headers.get('cache-control'), 'private, max-age=300')
+  const etag = first.headers.get('etag')
+  assert.ok(etag)
+  const kept = await get(etag)
+  assert.equal(kept.status, 304)
+  assert.equal(await kept.text(), '')
+  assert.equal(kept.headers.get('cache-control'), 'private, max-age=300')
+  assert.equal(kept.headers.get('etag'), etag)
+  assert.equal(s.blobGets, 1)
+  s.assets.clear()
+  const removed = await get(etag)
+  assert.equal(removed.status, 404)
+  assert.equal(removed.headers.get('cache-control'), 'private, no-store')
+  assert.equal(s.blobGets, 1)
+  s.session = session({ userId: 'user_b', loginId: 'b'.repeat(32) })
+  assert.equal((await get(etag)).status, 404)
+  s.session = null
+  assert.equal((await get(etag)).status, 401)
+  assert.equal(s.blobGets, 1)
+})
+
+test('public remote image bytes keep their existing private browser cache policy', async () => {
+  reset()
+  process.env.SESSION_SECRET ??= 'deterministic-route-security-secret-32+'
+  const { artifactImageSrc } = await import('../lib/artifact-image.ts')
+  const response = await routes['artifact-image'].GET(new Request(`https://fx0.example${artifactImageSrc(own, 'https://images.example.com/a.png')}`))
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('cache-control'), 'private, max-age=86400')
+  assert.equal(await response.text(), 'image')
+})
+
+test('a capped attachment still schedules durable cleanup after its refusal; deletion schedules it too', async () => {
+  const s = reset({ assetLimit: 'chat' })
+  const image = { type: 'image', mimeType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' }
+  const refused = await routes.prompt.POST(request('prompt', 'POST', own, { text: 'Use this image', images: [image] }))
+  assert.equal(refused.status, 429)
+  assert.equal(s.afterTasks.length, 1)
+  assert.equal(s.trace.includes('cleanup-retry'), false, 'cleanup stays outside the acknowledgement path')
+  await s.afterTasks[0]()
+  assert.equal(s.trace.includes('cleanup-retry'), true)
+  const deleting = reset()
+  assert.equal((await routes.session.DELETE(request('session', 'DELETE', own))).status, 200)
+  assert.equal(deleting.afterTasks.length, 1)
+  await deleting.afterTasks[0]()
+  assert.equal(deleting.trace.includes('cleanup-retry'), true)
+})
+
+test('a guest who signs in has their chats claimed once, then the guest cookie is dropped', async () => {
+  const s = reset({ guest: { kind: 'guest', userId: `guest:${'b'.repeat(32)}`, loginId: 'b'.repeat(32), loginAt: 1000, expiresAt: Date.now() + 86_400_000 } })
+  const claims = () => s.queries.filter(({ text }) => text.startsWith('UPDATE fx0_chat_ownership SET user_id')).length
+  assert.equal((await routes.session.GET(request('session', 'GET'))).status, 200)
+  assert.equal(claims(), 1)
+  assert.deepEqual(s.queries.find(({ text }) => text.startsWith('UPDATE fx0_chat_ownership SET user_id')).values, ['user_a', `guest:${'b'.repeat(32)}`])
+  assert.ok(s.trace.includes('clear-guest'))
+  assert.equal(s.guest, null)
+  assert.equal((await routes.session.GET(request('session', 'GET'))).status, 200)
+  assert.equal(claims(), 1, 'a later request does not repeat the claim')
 })
 
 test('the artifact preview paints no white of its own before the design does', async () => {

@@ -28,7 +28,12 @@ function rootAttributes(html: string): Map<string, string> {
   return roots
 }
 
+// A remote image has no network in the draft; it shows this soft 16:9 block until the
+// published design embeds the real one, never the browser's broken-image icon.
+const DRAFT_IMAGE_PLACEHOLDER = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="100%" height="100%" fill="#808080" fill-opacity="0.15"/></svg>')}`
+
 function clean(element: Element) {
+  const image = element.localName === 'img'
   for (const attribute of [...element.attributes]) {
     const name = attribute.name.toLowerCase()
     const value = attribute.value.trim()
@@ -38,6 +43,7 @@ function clean(element: Element) {
       element.removeAttribute(attribute.name)
     }
   }
+  if (image && !element.hasAttribute('src')) element.setAttribute('src', DRAFT_IMAGE_PLACEHOLDER)
 }
 
 /** Model markup cannot execute scripts or fetch resources while being cleaned. */

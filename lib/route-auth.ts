@@ -15,7 +15,7 @@ import type { SessionData } from './secure-session'
 import type { SessionPage } from './events'
 import type { SessionState } from './session'
 // @ts-expect-error Node strip-types tests require the source extension.
-import { createGuestSession, getGuestSession, guestUser, trialEnabled, type GuestSession } from './trial.ts'
+import { clearGuestSession, createGuestSession, getGuestSession, guestUser, trialEnabled, type GuestSession } from './trial.ts'
 
 export interface UserRouteContext { session: SessionData; user: AccountUser }
 export interface ChatRouteContext { session: SessionData | GuestSession; user: AccountUser }
@@ -71,8 +71,13 @@ export function withChatRoute(body: (request: Request, context: ChatRouteContext
       }
       if (request.method !== 'GET' && request.method !== 'HEAD') assertSameOrigin(request)
       if ('kind' in session) return privateResponse(await body(request, { session, user: guestUser(session) }))
+      // A guest who signs in keeps their chats; the claim runs once, then the cookie goes,
+      // so later requests skip the database write.
       const guest = await getGuestSession()
-      if (guest) await claimGuestSessions(guest.userId, session.userId)
+      if (guest) {
+        await claimGuestSessions(guest.userId, session.userId)
+        await clearGuestSession()
+      }
       return privateResponse(await body(request, { session, user: publicUser(session) }))
     } catch (error) { return routeFailure(error) }
   })

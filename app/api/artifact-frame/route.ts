@@ -1,4 +1,6 @@
-import { DESIGN_ARTIFACT_EMBEDDED_CSP, prepareDesignArtifactHtml } from '../../../lib/design-artifact'
+import { ARTIFACT_IMAGE_PATH, artifactImageSrc } from '../../../lib/artifact-image'
+import { DESIGN_ARTIFACT_EMBEDDED_CSP, designFrameCsp, designFrameHtml, prepareDesignArtifactHtml, remoteImagesEnabled } from '../../../lib/design-artifact'
+import { markRemoteImages } from '../../../lib/remote-image'
 import { readDesignArtifactAt } from '../../../lib/journal'
 import { readGeneration } from '../../../lib/history'
 import { withSessionRoute } from '../../../lib/route-auth'
@@ -23,7 +25,14 @@ export const GET = withSessionRoute(async (request, { id: sessionId, user }) => 
     return new Response(null, { status: 304, headers: { 'cache-control': 'private, no-cache', etag } })
   }
   const readyToken = crypto.randomUUID()
-  const prepared = artifact == null ? null : prepareDesignArtifactHtml(artifact, DESIGN_ARTIFACT_EMBEDDED_CSP, readyToken)
+  // Remote images become markers here; the wrapper loads each from /api/artifact-image
+  // and embeds it before the design runs, so the design has no network and the
+  // browser keeps the images across revisions (lib/remote-image.ts).
+  const marked = artifact != null
+    ? markRemoteImages(artifact, crypto.randomUUID().replaceAll('-', ''), { remote: remoteImagesEnabled() })
+    : { html: artifact, images: [] }
+  const images = marked.images.map(({ marker, url }) => ({ marker, src: artifactImageSrc(sessionId, url) }))
+  const prepared = marked.html == null ? null : prepareDesignArtifactHtml(marked.html, DESIGN_ARTIFACT_EMBEDDED_CSP, readyToken)
   // Every stored design passed validation, so this only guards against one that
   // somehow lacks a doctype: it is never shown without its CSP.
   if (artifact != null && prepared == null) log(sessionId, 'artifact:unrenderable', { revision: past ? revision : live!.revision })
@@ -32,76 +41,13 @@ export const GET = withSessionRoute(async (request, { id: sessionId, user }) => 
       artifact != null ? 'This design could not be prepared for preview.'
         : past ? 'This version is not in the history.' : 'No design artifact has been published for this session.'
     }</p></body></html>`
-  const artifactUrl = `data:text/html;base64,${Buffer.from(preparedArtifact, 'utf8').toString('base64')}`
-  const csp = [
-    "default-src 'none'",
-    'frame-src data:',
-    "script-src 'unsafe-inline'",
-    "style-src 'unsafe-inline'",
-    "object-src 'none'",
-    "base-uri 'none'",
-    "form-action 'none'",
-    "frame-ancestors 'self'",
-  ].join('; ')
-  const serializedArtifactUrl = JSON.stringify(artifactUrl)
-  const serializedReadyToken = JSON.stringify(readyToken)
-  // The wrapper paints nothing of its own, so a design that has not painted yet
-  // shows the app's background. Sharing the app's color scheme keeps it
-  // transparent; a design that sets no background still gets the browser's white.
-  const html = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Design artifact preview</title>
-<style>:root{color-scheme:light dark}html,body,#frame-root,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden}</style>
-</head>
-<body>
-<div id="frame-root"></div>
-<script>
-const artifact=${serializedArtifactUrl};
-const token=${serializedReadyToken};
-const frame=document.createElement('iframe');
-frame.title='Interactive design artifact';
-frame.setAttribute('sandbox','allow-scripts');
-frame.referrerPolicy='no-referrer';
-frame.setAttribute('credentialless','');
-let readySignals=0;
-let consumedSignals=0;
-let lastHeartbeat=Date.now();
-const restore=()=>{lastHeartbeat=Date.now();frame.src=artifact;};
-addEventListener('message',event=>{
-  if(event.source!==frame.contentWindow||event.data?.token!==token)return;
-  lastHeartbeat=Date.now();
-  if(event.data.type==='ready')readySignals++;
-  // The design paints in its own process, after this wrapper's load event; the app
-  // swaps a new revision on screen only once it has.
-  if(event.data.type==='painted')parent.postMessage({type:'fx0-artifact-painted'},location.origin);
-  // The design can only ask to open a link: its scripts can read the token and send
-  // this at any time. The app shows the address and opens it on the user's own click
-  // there. Recent user activation only filters out asks nobody prompted; it is not proof.
-  if(event.data.type==='open'&&typeof event.data.url==='string'&&navigator.userActivation?.isActive!==false){
-    parent.postMessage({type:'fx0-artifact-open',url:event.data.url},location.origin);
-  }
-});
-frame.addEventListener('load',()=>setTimeout(()=>{
-  if(readySignals>consumedSignals){consumedSignals=readySignals;return;}
-  restore();
-},100));
-setInterval(()=>{
-  if(document.visibilityState==='visible'&&Date.now()-lastHeartbeat>3000)restore();
-},500);
-frame.src=artifact;
-document.querySelector('#frame-root').append(frame);
-</script>
-</body>
-</html>`
+  const html = designFrameHtml(preparedArtifact, readyToken, images)
   return new Response(html, {
     status: artifact == null ? 404 : 200,
     headers: {
       'cache-control': etag ? 'private, no-cache' : 'private, no-store',
       ...(etag ? { etag } : {}),
-      'content-security-policy': csp,
+      'content-security-policy': designFrameCsp(images.length ? `${new URL(request.url).origin}${ARTIFACT_IMAGE_PATH}` : undefined),
       'content-type': 'text/html; charset=utf-8',
       'permissions-policy':
         'accelerometer=(), camera=(), clipboard-read=(), clipboard-write=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()',

@@ -1314,9 +1314,10 @@ export default function ChatApp({ account, sidebar, boot, preference, defaultMod
     }
 
     try {
-      const previews = images.length
-        ? (await Promise.all(images.map((image) => imageThumbnail(image.preview)))).filter((preview): preview is string => !!preview)
-        : []
+      // Made at attach time; computed here only for images restored from a guest draft.
+      // Sent only when every image has one, so none is shown on the wrong image.
+      const thumbnails = await Promise.all(images.map((image) => image.thumbnail ?? imageThumbnail(image.preview)))
+      const previews = thumbnails.every(Boolean) ? thumbnails as string[] : []
       const promptSession = !creating ? targetSession : reservedId ?? 'new'
       const response = await fetchUi(`/api/prompt?session=${encodeURIComponent(promptSession)}`, {
         method: 'POST',
@@ -1352,7 +1353,8 @@ export default function ChatApp({ account, sidebar, boot, preference, defaultMod
       if (!response.ok) {
         const detail = await response.text().catch(() => '')
         let code: string | undefined
-        try { code = JSON.parse(detail)?.code } catch { /* Other errors can be plain text. */ }
+        let reason: string | undefined
+        try { ({ code, error: reason } = JSON.parse(detail) ?? {}) } catch { /* Other errors can be plain text. */ }
         if (user.guest && response.status === 402 && code === 'trial_exhausted') {
           setFreePrompts(0)
           composerRef.current?.restoreDraft({ text: value, images, designMd: designPick })
@@ -1362,6 +1364,8 @@ export default function ChatApp({ account, sidebar, boot, preference, defaultMod
           setSignInOpen(true)
           return
         }
+        // A refused size or image limit is the user's to act on: show its own words.
+        if ((response.status === 413 || response.status === 429) && typeof reason === 'string') throw new Error(reason)
         throw new Error(`prompt failed: ${response.status}${detail ? ` — ${detail.slice(0, 300)}` : ''}`)
       }
       const remaining = response.headers.get('x-fx0-free-prompts')

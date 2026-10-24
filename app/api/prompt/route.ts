@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { after } from 'next/server'
 import { createSessionEventStream } from '../../../lib/event-stream'
-import { followChat, getSessionGenerationOptions, submitPrompt } from '../../../lib/agent'
+import { assertPromptFunding, followChat, getSessionGenerationOptions, submitPrompt } from '../../../lib/agent'
 import { parseDesignMdRequest, type DesignMdInput } from '../../../lib/design-md'
 import { withPromptRoute, type SessionRouteContext } from '../../../lib/route-auth'
 import { touchOwnedSession } from '../../../lib/accounts'
@@ -10,13 +10,11 @@ import { checkBotId } from 'botid/server'
 import { trialEnabled, trialIpHash, trialStore, type TrialCredential, type TrialReservation } from '../../../lib/trial'
 import { TRIAL_MODEL, usesFreePrompts } from '../../../lib/trial-policy'
 import { DEFAULT_MODEL, log } from '../../../lib/session'
+import { validatePromptImages, validatePromptPreviews } from '../../../lib/prompt-images'
+import { DesignAssetLimitError, retryDesignAssetCleanup, startDesignAssets, type PendingDesignAssets } from '../../../lib/design-assets'
 import { PROMPT_TEXT_LIMIT_ERROR, PROMPT_TEXT_MAX_BYTES, promptTextBytes } from '../../../lib/prompt-limits'
 
 export const maxDuration = 800
-
-// libfx stores each prompt, images included, before it acknowledges it; this
-// keeps one prompt's images well inside its stored-input limits.
-const MAX_DURABLE_IMAGE_BYTES = 3 * 1024 * 1024
 
 // Catalog files ship with this route (outputFileTracingIncludes in next.config.mjs).
 async function catalogDesignMd(id: string, name: string): Promise<DesignMdInput> {
@@ -43,34 +41,17 @@ export const POST = withPromptRoute(async (request, context) => {
   }
 
   const text = typeof body?.text === 'string' ? body.text.trim() : ''
-  const images = Array.isArray(body?.images)
-    ? body.images.filter(
-        (i): i is { type: 'image'; data: string; mimeType: string } =>
-          i?.type === 'image' && typeof i?.data === 'string' && typeof i?.mimeType === 'string',
-      )
-    : undefined
-  if (!text && !images?.length) return Response.json({ error: 'empty prompt' }, { status: 400 })
+  // Checked whole before any reservation or write: a refusal leaves the composer's draft.
+  const checkedImages = validatePromptImages(body?.images)
+  if ('error' in checkedImages) return Response.json({ error: checkedImages.error }, { status: 413 })
+  const images = checkedImages.images.length ? checkedImages.images : undefined
+  if (!text && !images) return Response.json({ error: 'empty prompt' }, { status: 400 })
   // Rejected whole, never cut: the composer keeps the draft and shows this error.
   if (promptTextBytes(text) > PROMPT_TEXT_MAX_BYTES) return Response.json({ error: PROMPT_TEXT_LIMIT_ERROR }, { status: 413 })
-  if ((images?.length ?? 0) > 8) return Response.json({ error: 'prompt cannot contain more than 8 images' }, { status: 413 })
-  let imageBytes = 0
-  for (const [index, image] of (images ?? []).entries()) {
-    if (!image.mimeType || image.mimeType.length > 128 || image.data.length > 5 * 1024 * 1024) {
-      return Response.json({ error: `invalid or oversized image ${index + 1}` }, { status: 413 })
-    }
-    imageBytes += image.data.length
-  }
-  if (imageBytes > MAX_DURABLE_IMAGE_BYTES) {
-    return Response.json({ error: 'prompt images exceed the 3 MiB limit' }, { status: 413 })
-  }
 
   // Thumbnails persisted with the user's event so a reload still shows the images.
   // The full images above go to the model; these are display-only and bounded.
-  const previews = Array.isArray(body?.previews)
-    ? body.previews.filter((preview): preview is string =>
-      typeof preview === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(preview) && preview.length <= 96 * 1024)
-      .slice(0, images?.length ?? 0)
-    : []
+  const previews = validatePromptPreviews(body?.previews, images?.length ?? 0)
 
   // Settings picked before the chat existed; ignored once the chat has state.
   const generation = body?.generation && typeof body.generation === 'object' ? body.generation : {}
@@ -124,6 +105,14 @@ export const POST = withPromptRoute(async (request, context) => {
   try {
     activated = await context.activate()
     activatedAt = performance.now()
+    // Funding is checked first, so nothing is stored for a prompt that could not run.
+    // The caps are taken here; the upload then runs while libfx admits the prompt.
+    let assets: PendingDesignAssets | undefined
+    if (images) {
+      after(() => retryDesignAssetCleanup().catch(() => console.error('[fx0] asset cleanup retry unavailable')))
+      assertPromptFunding(activated.host, funding, 'kind' in session ? undefined : session)
+      assets = await startDesignAssets(activated.id, user.id, images)
+    }
     submitted = await submitPrompt(
       activated.host,
       author,
@@ -134,9 +123,11 @@ export const POST = withPromptRoute(async (request, context) => {
       previews.length ? previews : undefined,
       funding,
       'kind' in session ? undefined : session,
+      assets,
     )
   } catch (error) {
     if (reservation) await trialStore().release(reservation).catch(() => console.error('[fx0] free prompt release failed'))
+    if (error instanceof DesignAssetLimitError) return Response.json({ error: error.message }, { status: 429 })
     throw error
   }
   // Once journaled, an admission must keep its slot even if this confirmation

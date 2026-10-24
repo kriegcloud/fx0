@@ -1,4 +1,32 @@
 export const MAX_DESIGN_ARTIFACT_BYTES = 512 * 1024
+export const MAX_REMOTE_IMAGE_URL_LENGTH = 2048
+
+export function remoteImagesEnabled(): boolean {
+  return process.env.FX0_REMOTE_IMAGES !== '0'
+}
+
+/** A remote image fx0 may fetch: absolute https, no credentials, bounded; else null. */
+export function remoteImageUrl(value: string): string | null {
+  if (!/^https:\/\//i.test(value) || value.length > MAX_REMOTE_IMAGE_URL_LENGTH) return null
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return null
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || !url.hostname) return null
+  return url.href.length <= MAX_REMOTE_IMAGE_URL_LENGTH ? url.href : null
+}
+
+// An image the user attached, stored by fx0 (lib/design-assets.ts) and named in a design
+// as fx0-asset:<id>. Like a remote image it is embedded before the design runs.
+const ASSET_REFERENCE = /^fx0-asset:[A-Za-z0-9_-]{24}$/
+export function assetReference(value: string): string | null {
+  return ASSET_REFERENCE.test(value) ? value : null
+}
+
+// Anything the design may name as an image besides data:, as the rewriter sees it.
+const imageReference = (value: string) => assetReference(value) ?? remoteImageUrl(value)
 
 export const DESIGN_ARTIFACT_EMBEDDED_CSP = [
   "default-src 'none'",
@@ -16,6 +44,116 @@ export const DESIGN_ARTIFACT_EMBEDDED_CSP = [
   "base-uri 'none'",
   "form-action 'none'",
 ].join('; ')
+
+// The wrapper that frames the design. Its blob: frame inherits this policy on top of
+// the embedded one, so anything the design may load must be allowed here too.
+// `imageRoute` is the absolute /api/artifact-image URL the wrapper itself loads a
+// design's images from; the design's own policy still allows it no connection.
+export function designFrameCsp(imageRoute?: string): string {
+  return [
+    "default-src 'none'",
+    'frame-src blob:',
+    ...(imageRoute ? [`connect-src ${imageRoute}`] : []),
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    'img-src data:',
+    'font-src data:',
+    'media-src data:',
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'self'",
+  ].join('; ')
+}
+
+export const DESIGN_FRAME_CSP = designFrameCsp()
+// Counted per place an image is written, so a repeated image cannot expand the design past it.
+export const MAX_EMBEDDED_IMAGE_BYTES = 4 * 1024 * 1024
+
+// The page artifact-frame serves under designFrameCsp(): it frames the prepared design
+// and relays its heartbeat, paint and link messages to the app. Each image marker in the
+// design becomes its image, loaded from `src` (cached by the browser across revisions),
+// within MAX_EMBEDDED_IMAGE_BYTES counted per occurrence; a missing image is blank. Only
+// then does the design start, so it never needs the network.
+export function designFrameHtml(preparedArtifact: string, readyToken: string, images: { marker: string; src: string }[] = []): string {
+  // The design reaches its frame as a blob: URL the wrapper makes from this string,
+  // not as a data: URL: browsers refuse data: URLs past 2 MiB, which embedded images
+  // reach. A blob: document is local like data:, so it inherits this wrapper's CSP and
+  // resolves no relative URLs against fx0. "<" is escaped so the string cannot end the script.
+  const serializedArtifact = JSON.stringify(preparedArtifact).replace(/</g, '\\u003c')
+  const serializedReadyToken = JSON.stringify(readyToken)
+  const serializedImages = JSON.stringify(images).replace(/</g, '\\u003c')
+  // The wrapper paints nothing of its own, so a design that has not painted yet
+  // shows the app's background. Sharing the app's color scheme keeps it
+  // transparent; a design that sets no background still gets the browser's white.
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Design artifact preview</title>
+<style>:root{color-scheme:light dark}html,body,#frame-root,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden}</style>
+</head>
+<body>
+<div id="frame-root"></div>
+<script>
+const design=${serializedArtifact};
+const images=${serializedImages};
+let artifact=null;
+const token=${serializedReadyToken};
+const frame=document.createElement('iframe');
+frame.title='Interactive design artifact';
+frame.setAttribute('sandbox','allow-scripts');
+frame.referrerPolicy='no-referrer';
+frame.setAttribute('credentialless','');
+let readySignals=0;
+let consumedSignals=0;
+let lastHeartbeat=Date.now();
+const restore=()=>{if(!artifact)return;lastHeartbeat=Date.now();frame.src=artifact;};
+addEventListener('message',event=>{
+  if(event.source!==frame.contentWindow||event.data?.token!==token)return;
+  lastHeartbeat=Date.now();
+  if(event.data.type==='ready')readySignals++;
+  // The design paints in its own process, after this wrapper's load event; the app
+  // swaps a new revision on screen only once it has.
+  if(event.data.type==='painted')parent.postMessage({type:'fx0-artifact-painted'},location.origin);
+  // The design can only ask to open a link: its scripts can read the token and send
+  // this at any time. The app shows the address and opens it on the user's own click
+  // there. Recent user activation only filters out asks nobody prompted; it is not proof.
+  if(event.data.type==='open'&&typeof event.data.url==='string'&&navigator.userActivation?.isActive!==false){
+    parent.postMessage({type:'fx0-artifact-open',url:event.data.url},location.origin);
+  }
+});
+frame.addEventListener('load',()=>setTimeout(()=>{
+  if(readySignals>consumedSignals){consumedSignals=readySignals;return;}
+  restore();
+},100));
+// Hidden time and suspended timers are browser pauses, not design failures.
+let lastCheck=Date.now();
+document.addEventListener('visibilitychange',()=>{lastHeartbeat=lastCheck=Date.now();});
+setInterval(()=>{
+  const now=Date.now(),paused=now-lastCheck>3000;
+  lastCheck=now;
+  if(document.visibilityState!=='visible'||paused){lastHeartbeat=now;return;}
+  if(now-lastHeartbeat>3000)restore();
+},500);
+const read=blob=>new Promise(done=>{const reader=new FileReader();reader.onload=()=>done(String(reader.result));reader.onerror=()=>done(null);reader.readAsDataURL(blob)});
+const load=async src=>{try{const response=await fetch(src,{credentials:'same-origin'});if(!response.ok)return null;const blob=await response.blob();return /^image\\/(png|jpeg|gif|webp|avif)$/.test(blob.type)?await read(blob):null}catch{return null}};
+Promise.all(images.map(image=>load(image.src))).then(loaded=>{
+  let html=design,total=0;
+  images.forEach((image,index)=>{
+    const data=loaded[index],size=data?(data.length-data.indexOf(',')-1)*3/4-(data.endsWith('==')?2:data.endsWith('=')?1:0):0;
+    html=html.split(image.marker).map((part,at)=>at===0?part:(data&&total+size<=${MAX_EMBEDDED_IMAGE_BYTES}?(total+=size,data):${JSON.stringify(BLANK_IMAGE)})+part).join('');
+  });
+  artifact=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  lastHeartbeat=Date.now();
+  frame.src=artifact;
+  document.querySelector('#frame-root').append(frame);
+});
+</script>
+</body>
+</html>`
+}
 
 function designArtifactBootstrap(readyToken?: string): string {
   // The sandbox grants no popups, so a clicked https link asks the app to open it
@@ -63,10 +201,20 @@ function visibleStart(html: string): string {
 // `html` is the normalized document: the exact value to store.
 export type DesignArtifactValidation = { ok: true; bytes: number; html: string } | { ok: false; error: string }
 
+// Where an attribute's raw value sits in the source, quotes included, so a prepared
+// copy can replace exactly that value.
+interface SourceRange {
+  start: number
+  end: number
+}
+
 interface HtmlTag {
   name: string
   attributes: Map<string, string>
+  valueRanges: Map<string, SourceRange>
   duplicateAttribute: string | null
+  // The raw text of a <style> element.
+  content?: SourceRange
 }
 
 const PROHIBITED_TAGS = new Map([
@@ -92,10 +240,11 @@ function findTagEnd(source: string, start: number): number {
   return -1
 }
 
-function parseAttributes(source: string): Pick<HtmlTag, 'attributes' | 'duplicateAttribute'> {
+function parseAttributes(source: string, offset: number): Pick<HtmlTag, 'attributes' | 'valueRanges' | 'duplicateAttribute'> {
   const attributes = new Map<string, string>()
+  const valueRanges = new Map<string, SourceRange>()
   let duplicateAttribute: string | null = null
-  const pattern = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
+  const pattern = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/dg
   for (const match of source.matchAll(pattern)) {
     const name = match[1].toLowerCase()
     if (name === '/') continue
@@ -104,8 +253,12 @@ function parseAttributes(source: string): Pick<HtmlTag, 'attributes' | 'duplicat
       continue
     }
     attributes.set(name, match[2] ?? match[3] ?? match[4] ?? '')
+    const quoted = match.indices![2] ?? match.indices![3]
+    const bare = match.indices![4]
+    if (quoted) valueRanges.set(name, { start: offset + quoted[0] - 1, end: offset + quoted[1] + 1 })
+    else if (bare) valueRanges.set(name, { start: offset + bare[0], end: offset + bare[1] })
   }
-  return { attributes, duplicateAttribute }
+  return { attributes, valueRanges, duplicateAttribute }
 }
 
 function parseOpeningTags(source: string): HtmlTag[] {
@@ -133,11 +286,13 @@ function parseOpeningTags(source: string): HtmlTag[] {
     const end = findTagEnd(source, start + 1 + nameMatch[0].length)
     if (end < 0) break
     const name = nameMatch[1].toLowerCase()
-    const attributeSource = source.slice(start + 1 + nameMatch[0].length, end)
-    tags.push({ name, ...parseAttributes(attributeSource) })
+    const attributeStart = start + 1 + nameMatch[0].length
+    const tag: HtmlTag = { name, ...parseAttributes(source.slice(attributeStart, end), attributeStart) }
+    tags.push(tag)
     if (name === 'script' || name === 'style') {
       const closing = normalized.indexOf(`</${name}`, end + 1)
       cursor = closing < 0 ? source.length : closing
+      if (name === 'style') tag.content = { start: end + 1, end: cursor }
     } else {
       cursor = end + 1
     }
@@ -187,7 +342,42 @@ function isEmbeddedSrcset(tag: string, value: string): boolean {
   return /^data:image\/[a-z0-9.+-]+(?:;[^,\s]*)*$/i.test(metadata) && /^\S+(?:\s+(?:\d+(?:\.\d+)?[wx]))?$/.test(payload)
 }
 
-function validateTag(tag: HtmlTag): string | null {
+interface SrcsetCandidate {
+  url: string
+  descriptor: string
+}
+
+// A srcset of remote image candidates, split the way the HTML parser splits it (a URL
+// runs to whitespace; trailing commas end it), or null when any candidate is not one.
+function remoteSrcset(value: string, accept: (url: string) => string | null = imageReference): SrcsetCandidate[] | null {
+  const candidates: SrcsetCandidate[] = []
+  let index = 0
+  while (index < value.length) {
+    while (index < value.length && /[\s,]/.test(value[index])) index++
+    if (index >= value.length) break
+    const urlStart = index
+    while (index < value.length && !/\s/.test(value[index])) index++
+    let raw = value.slice(urlStart, index)
+    let descriptor = ''
+    if (raw.endsWith(',')) {
+      raw = raw.replace(/,+$/, '')
+    } else {
+      const descriptorStart = index
+      while (index < value.length && value[index] !== ',') index++
+      descriptor = value.slice(descriptorStart, index).trim()
+    }
+    const url = accept(raw)
+    if (!url || !/^(?:\d+(?:\.\d+)?[wx])?$/.test(descriptor)) return null
+    candidates.push({ url, descriptor })
+  }
+  return candidates.length ? candidates : null
+}
+
+const remoteImageValue = (rawValue: string) => imageReference(decodeAttribute(rawValue))
+
+function validateTag(tag: HtmlTag, remote: boolean): string | null {
+  const allowed = (value: string) => assetReference(value) ?? (remote ? remoteImageUrl(value) : null)
+  const allowedValue = (rawValue: string) => allowed(decodeAttribute(rawValue))
   if (tag.duplicateAttribute) {
     return `design artifact must not repeat the ${tag.duplicateAttribute} attribute`
   }
@@ -213,28 +403,169 @@ function validateTag(tag: HtmlTag): string | null {
     }
     if (name === 'href' || name === 'xlink:href') {
       const value = decodeAttribute(rawValue)
-      const isSafeSvgImage = tag.name === 'image' && /^data:image\//i.test(value)
+      const isSafeSvgImage = tag.name === 'image' && (/^data:image\//i.test(value) || !!allowed(value))
       // Links to https pages (cited sources, references) open in a new tab; see the bootstrap.
       const isExternalLink = tag.name === 'a' && name === 'href' && /^https:\/\/[^\s]+$/i.test(value)
       if (!value.startsWith('#') && !isSafeSvgImage && !isExternalLink) {
         return `design artifact ${name} values must be local fragments, https links, or compatible embedded data: URLs`
       }
     }
-    if (name === 'src' && !isEmbeddedSource(tag.name, rawValue)) {
-      return 'design artifact src values must use a compatible embedded data: URL'
+    if (name === 'src' && !isEmbeddedSource(tag.name, rawValue) && !(tag.name === 'img' && allowedValue(rawValue))) {
+      return remote
+        ? 'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL'
+        : 'design artifact src values must use a compatible embedded data: URL'
     }
-    if (name === 'srcset' && !isEmbeddedSrcset(tag.name, rawValue)) {
-      return 'design artifact srcset values must contain one embedded data:image URL'
+    if (name === 'srcset' && !isEmbeddedSrcset(tag.name, rawValue) &&
+      !((tag.name === 'img' || tag.name === 'source') && remoteSrcset(decodeAttribute(rawValue), allowed))) {
+      return remote
+        ? 'design artifact srcset values must list https image URLs or contain one embedded data:image URL'
+        : 'design artifact srcset values must contain one embedded data:image URL'
     }
-    if (name === 'poster' && !/^data:image\//i.test(decodeAttribute(rawValue))) {
-      return 'design artifact poster values must use an embedded data:image URL'
+    if (name === 'poster' && !/^data:image\//i.test(decodeAttribute(rawValue)) && !allowedValue(rawValue)) {
+      return remote
+        ? 'design artifact poster values must use an https image URL or an embedded data:image URL'
+        : 'design artifact poster values must use an embedded data:image URL'
     }
   }
 
   return null
 }
 
-export function validateDesignArtifactHtml(html: string): DesignArtifactValidation {
+// Prepared copies only: every remote image the markup or its CSS names, in the
+// places validation accepts it, becomes `embed(url)`, a data: image URL. The stored
+// design is untouched; text, scripts and anything else that merely contains a URL are
+// never rewritten. A srcset keeps only its largest candidate, so each image is fetched once.
+export function rewriteRemoteImages(html: string, embed: (url: string) => string | null): string {
+  const edits: (SourceRange & { text: string })[] = []
+  // embed() returning null leaves that reference as written (the export keeps remote URLs).
+  const image = (url: string) => { const value = embed(url); return value == null ? null : embeddedImage(value) }
+  const lower = html.toLowerCase()
+  for (const tag of parseOpeningTags(html)) {
+    for (const [name, range] of tag.valueRanges) {
+      const raw = tag.attributes.get(name)!
+      let url: string | null = null
+      if (name === 'src' && tag.name === 'img') url = remoteImageValue(raw)
+      else if (name === 'poster' && tag.name === 'video') url = remoteImageValue(raw)
+      else if ((name === 'href' || name === 'xlink:href') && tag.name === 'image') url = remoteImageValue(raw)
+      else if (name === 'srcset' && (tag.name === 'img' || tag.name === 'source')) url = largestCandidate(decodeAttribute(raw))
+      const replacement = url ? image(url) : null
+      if (replacement) {
+        edits.push({ ...range, text: `"${replacement}"` })
+      } else if (name === 'style') {
+        const quoted = html[range.start] === '"' || html[range.start] === "'"
+        const inner = quoted ? { start: range.start + 1, end: range.end - 1 } : range
+        for (const edit of cssUrlEdits(html, lower, inner, true)) { const value = image(edit.url); if (value) edits.push({ ...edit, text: `url(${value})` }) }
+      }
+    }
+    if (tag.content) {
+      for (const edit of cssUrlEdits(html, lower, tag.content, false)) { const value = image(edit.url); if (value) edits.push({ ...edit, text: `url(${value})` }) }
+    }
+  }
+  // One pass, so the cost grows with the output, not with the number of edits.
+  const parts: string[] = []
+  let cursor = 0
+  for (const edit of edits.sort((a, b) => a.start - b.start)) {
+    parts.push(html.slice(cursor, edit.start), edit.text)
+    cursor = edit.end
+  }
+  parts.push(html.slice(cursor))
+  return parts.join('')
+}
+
+// The embedded value lands unquoted in CSS url() and quoted in attributes, so it must
+// be a base64 data: image, whose characters need no escaping in either.
+const EMBEDDED_IMAGE = /^data:image\/(?:png|jpeg|gif|webp|avif);base64,[A-Za-z0-9+/]+={0,2}$/
+export const BLANK_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+// A marker the wrapper replaces with its image (see markRemoteImages in remote-image.ts).
+const IMAGE_MARKER = /^fx0-image-[0-9a-f]{32}-\d{1,2}$/
+function embeddedImage(value: string): string {
+  return EMBEDDED_IMAGE.test(value) || IMAGE_MARKER.test(value) ? value : BLANK_IMAGE
+}
+
+function largestCandidate(value: string): string | null {
+  const candidates = remoteSrcset(value)
+  if (!candidates) return null
+  const size = ({ descriptor }: SrcsetCandidate) => Number.parseFloat(descriptor) || 1
+  return candidates.reduce((best, candidate) => (size(candidate) > size(best) ? candidate : best)).url
+}
+
+// In a style attribute the browser decodes character references first, so quotes may
+// be spelled as references there.
+const ATTRIBUTE_QUOTES = ['"', "'", '&quot;', '&#34;', '&#x22;', '&apos;', '&#39;', '&#x27;']
+const STYLE_QUOTES = ['"', "'"]
+
+// The url() tokens in a CSS range whose argument is a remote image URL, skipping
+// comments and strings. An argument with a CSS escape is left alone (and stays blocked).
+// `lower` is the whole source lowercased once by the caller; every scan stays inside `range`.
+function cssUrlEdits(source: string, lower: string, range: SourceRange, inAttribute: boolean): (SourceRange & { url: string })[] {
+  const quotes = inAttribute ? ATTRIBUTE_QUOTES : STYLE_QUOTES
+  const quoteAt = (index: number) => quotes.find((quote) => lower.startsWith(quote, index))
+  // The next ")" at or after a position, remembered: positions only grow, so the
+  // whole range is searched once however many url( tokens never close.
+  let nextClose = -1
+  const closeAfter = (index: number) => {
+    if (nextClose < index) {
+      nextClose = source.indexOf(')', index)
+      if (nextClose < 0 || nextClose >= range.end) nextClose = Number.POSITIVE_INFINITY
+    }
+    return nextClose
+  }
+  const edits: (SourceRange & { url: string })[] = []
+  let index = range.start
+  while (index < range.end) {
+    if (lower.startsWith('/*', index)) {
+      const close = lower.indexOf('*/', index + 2)
+      index = close < 0 || close + 2 > range.end ? range.end : close + 2
+      continue
+    }
+    const quote = quoteAt(index)
+    if (quote) {
+      index = stringEnd(lower, index + quote.length, quote, range.end)
+      continue
+    }
+    if (lower.startsWith('url(', index) && !/[\w-]/.test(lower[index - 1] ?? '')) {
+      const token = cssUrlToken(source, lower, index + 4, range.end, quoteAt, closeAfter)
+      if (token) {
+        const value = (inAttribute ? decodeAttribute(token.value) : token.value).trim()
+        const url = value.includes('\\') ? null : imageReference(value)
+        if (url) edits.push({ start: index, end: token.end, url })
+        index = token.end
+        continue
+      }
+    }
+    index++
+  }
+  return edits
+}
+
+function stringEnd(lower: string, index: number, quote: string, limit: number): number {
+  while (index < limit) {
+    if (lower[index] === '\\') index += 2
+    else if (lower.startsWith(quote, index)) return index + quote.length
+    else index++
+  }
+  return limit
+}
+
+function cssUrlToken(source: string, lower: string, index: number, limit: number, quoteAt: (index: number) => string | undefined, closeAfter: (index: number) => number) {
+  while (index < limit && /\s/.test(source[index])) index++
+  const quote = quoteAt(index)
+  let value: string
+  if (quote) {
+    const close = stringEnd(lower, index + quote.length, quote, limit)
+    value = source.slice(index + quote.length, close - quote.length)
+    index = close
+    while (index < limit && /\s/.test(source[index])) index++
+  } else {
+    const close = closeAfter(index)
+    if (close >= limit) return null
+    value = source.slice(index, close)
+    index = close
+  }
+  return source[index] === ')' ? { value, end: index + 1 } : null
+}
+
+export function validateDesignArtifactHtml(html: string, { remoteImages = remoteImagesEnabled() } = {}): DesignArtifactValidation {
   const source = normalizeDesignArtifactHtml(html)
   const bytes = Buffer.byteLength(source, 'utf8')
   if (bytes > MAX_DESIGN_ARTIFACT_BYTES) {
@@ -270,7 +601,7 @@ export function validateDesignArtifactHtml(html: string): DesignArtifactValidati
   }
 
   for (const tag of parseOpeningTags(source)) {
-    const error = validateTag(tag)
+    const error = validateTag(tag, remoteImages)
     if (error) return { ok: false, error }
   }
 

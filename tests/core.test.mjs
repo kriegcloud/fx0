@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import { urlChat } from '../lib/session-id.ts'
 import './runtime.test.mjs'
 import {
   DESIGN_ARTIFACT_EMBEDDED_CSP,
+  designFrameHtml,
   MAX_DESIGN_ARTIFACT_BYTES,
   normalizeDesignArtifactHtml,
   prepareDesignArtifactHtml,
@@ -611,19 +613,67 @@ test('design artifact validation rejects comments, meta refresh, base, links, an
   )
 })
 
-test('design artifact validation rejects external asset and action values', () => {
+test('with remote images off, design artifact validation rejects every external asset', () => {
+  const local = (html) => validateDesignArtifactHtml(html, { remoteImages: false })
+  assert.deepEqual(local(documentWith('<img src="https://example.com/image.png" alt="">')),
+    { ok: false, error: 'design artifact src values must use a compatible embedded data: URL' })
+  assert.deepEqual(local(documentWith('<img srcset="https://example.com/image.png 2x" alt="">')),
+    { ok: false, error: 'design artifact srcset values must contain one embedded data:image URL' })
+  assert.deepEqual(local(documentWith('<video poster="https://example.com/p.png"></video>')),
+    { ok: false, error: 'design artifact poster values must use an embedded data:image URL' })
+  assert.deepEqual(local(documentWith('<svg><image href="https://example.com/a.png"/></svg>')),
+    { ok: false, error: 'design artifact href values must be local fragments, https links, or compatible embedded data: URLs' })
+})
+
+test('design artifact validation accepts remote https images only where they are images', () => {
+  for (const body of [
+    '<img src="https://example.com/image.png" alt="">',
+    '<img src="https://example.com/a.png?w=10&amp;h=20" alt="">',
+    '<img srcset="https://example.com/a.png 1x, https://example.com/b.png 2x" alt="">',
+    '<img srcset="https://cdn.example.com/w_100,h_100/a.png 100w,https://cdn.example.com/b.png 200w" alt="">',
+    '<picture><source srcset="https://example.com/a.webp"><img src="https://example.com/a.png" alt=""></picture>',
+    '<video poster="https://example.com/p.png"></video>',
+    '<svg><image href="https://example.com/a.png"/><image xlink:href="https://example.com/b.png"/></svg>',
+  ]) assert.equal(validateDesignArtifactHtml(documentWith(body)).ok, true, body)
   assertInvalid(
-    documentWith('<img src="https://example.com/image.png" alt="">'),
-    'design artifact src values must use a compatible embedded data: URL',
+    documentWith('<img src="http://example.com/image.png" alt="">'),
+    'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL',
   )
   assertInvalid(
-    documentWith('<img srcset="https://example.com/image.png 2x" alt="">'),
-    'design artifact srcset values must contain one embedded data:image URL',
+    documentWith('<img src="https://user:pass@example.com/image.png" alt="">'),
+    'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL',
+  )
+  assertInvalid(
+    documentWith(`<img src="https://example.com/${'a'.repeat(2048)}.png" alt="">`),
+    'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL',
+  )
+  assertInvalid(
+    documentWith('<audio src="https://example.com/a.mp3"></audio>'),
+    'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL',
+  )
+  assertInvalid(
+    documentWith('<video><source src="https://example.com/a.mp4"></video>'),
+    'design artifact src values must be an https image URL on <img> or a compatible embedded data: URL',
   )
   assertInvalid(
     documentWith('<img srcset="data:image/gif;base64,R0lGODlhAQABAAAAACw= 1x, https://example.com/image.png 2x" alt="">'),
-    'design artifact srcset values must contain one embedded data:image URL',
+    'design artifact srcset values must list https image URLs or contain one embedded data:image URL',
   )
+  assertInvalid(
+    documentWith('<img srcset="https://example.com/a.png 2y" alt="">'),
+    'design artifact srcset values must list https image URLs or contain one embedded data:image URL',
+  )
+  assertInvalid(
+    documentWith('<script src="https://example.com/app.js"></script>'),
+    'design artifact scripts must be inline',
+  )
+  assertInvalid(
+    documentWith('<link rel="stylesheet" href="https://example.com/a.css">'),
+    'design artifact href values must be local fragments, https links, or compatible embedded data: URLs',
+  )
+})
+
+test('design artifact validation rejects external action values', () => {
   assertInvalid(
     documentWith('<button formaction="/submit">Send</button>'),
     'design artifact must not contain formaction attributes',
@@ -673,6 +723,87 @@ test('a design that does not start with its doctype is rejected with what it sta
   for (const html of [`\u200b${SAFE_DESIGN}`, '<main>fragment</main>', '']) {
     assert.equal(prepareDesignArtifactHtml(html, DESIGN_ARTIFACT_EMBEDDED_CSP, 'token'), null, JSON.stringify(html.slice(0, 20)))
   }
+})
+
+// Run the served wrapper itself with a controlled clock and browser scheduling.
+async function frameWatchdog() {
+  let now = 0
+  let check
+  let loads = 0
+  const listeners = new Map()
+  const documentListeners = new Map()
+  const frame = {
+    contentWindow: {},
+    setAttribute() {},
+    addEventListener() {},
+    set src(value) { loads++ },
+  }
+  const document = {
+    visibilityState: 'visible',
+    createElement: () => frame,
+    querySelector: () => ({ append() {} }),
+    addEventListener: (type, listener) => documentListeners.set(type, listener),
+  }
+  const html = designFrameHtml(SAFE_DESIGN, 'watchdog-test')
+  runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], {
+    document,
+    Date: { now: () => now },
+    Blob,
+    URL: { createObjectURL: () => 'blob:design' },
+    addEventListener: (type, listener) => listeners.set(type, listener),
+    setInterval: (callback) => { check = callback },
+    setTimeout() {},
+  })
+  await new Promise(setImmediate)
+  assert.equal(loads, 1, 'the initial artifact loads')
+  return {
+    get loads() { return loads },
+    tick(ms = 500) { now += ms; check() },
+    visibility(state, notify = true) {
+      document.visibilityState = state
+      if (notify) documentListeners.get('visibilitychange')?.()
+    },
+    heartbeat() {
+      listeners.get('message')({ source: frame.contentWindow, data: { type: 'heartbeat', token: 'watchdog-test' } })
+    },
+  }
+}
+
+test('the preview watchdog preserves the document on a tab return, even with delayed heartbeats', async () => {
+  const frame = await frameWatchdog()
+  frame.visibility('hidden')
+  for (let i = 0; i < 120; i++) frame.tick()
+  frame.visibility('visible')
+  for (let i = 0; i < 5; i++) frame.tick()
+  assert.equal(frame.loads, 1, 'background time is not a failure')
+  frame.heartbeat()
+  for (let i = 0; i < 10; i++) {
+    frame.tick()
+    frame.heartbeat()
+  }
+  assert.equal(frame.loads, 1, 'the original document stays alive after resuming')
+})
+
+test('the preview watchdog tolerates suspended timers before the visibility event is delivered', async () => {
+  const frame = await frameWatchdog()
+  // No callbacks run while the browser freezes the tab or the machine sleeps.
+  frame.visibility('hidden')
+  frame.visibility('visible', false)
+  frame.tick(60_000)
+  assert.equal(frame.loads, 1, 'a delayed timer is not evidence of a broken design')
+  frame.visibility('visible')
+  frame.tick()
+  frame.heartbeat()
+  assert.equal(frame.loads, 1)
+})
+
+test('the preview watchdog still restores a design that stays silent while visible', async () => {
+  const frame = await frameWatchdog()
+  for (let i = 0; i < 7; i++) frame.tick()
+  assert.equal(frame.loads, 2)
+  frame.heartbeat()
+  for (let i = 0; i < 6; i++) frame.tick()
+  assert.equal(frame.loads, 2, 'a fresh heartbeat resets the recovery deadline')
 })
 
 test('design artifact validation rejects fragments and oversized documents', () => {

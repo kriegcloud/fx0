@@ -75,6 +75,12 @@ export async function createGuestSession(): Promise<GuestSession> {
   return session
 }
 
+// Once a signed-in request has claimed the guest's chats, the guest cookie has no use left
+// (the free prompt allowance is counted per IP, not per guest), so it is dropped.
+export async function clearGuestSession(): Promise<void> {
+  ;(await cookies()).delete(GUEST_COOKIE)
+}
+
 // Vercel overwrites this header. Outside Vercel, only local development is
 // supported; accepting a caller's forwarded IP there would reset the allowance.
 export function trialIpHash(headers: Headers): string {

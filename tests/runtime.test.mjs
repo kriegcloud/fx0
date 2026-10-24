@@ -9,13 +9,15 @@ const journalNames = [
   'answerActiveQuestion', 'appendEvent', 'bindLibfxSession', 'chatOfLibfxSession', 'claimSessionCleanup',
   'clearActiveQuestion', 'currentSeq', 'emitLive', 'finishSessionCleanup', 'finishTurnWork', 'getActiveQuestion',
   'getActiveTurn', 'nextQuestionId', 'projectEvents', 'projectedCursor', 'publishDesignArtifact', 'readDesignArtifact',
-  'readDesignMd', 'readEvents', 'readSession', 'readSessionView', 'readTurnWork', 'releaseSessionCleanup', 'renewSessionCleanup',
+  'readDesignAssets', 'readDesignMd', 'readEvents', 'recordDesignAssets', 'releaseDesignAssets', 'reserveDesignAssets',
+  'finishDesignAssetCleanup', 'pendingDesignAssetCleanups', 'queueDesignAssetCleanup',
+  'readSession', 'readSessionView', 'readTurnWork', 'releaseSessionCleanup', 'renewSessionCleanup',
   'setActiveQuestion', 'submitPrompt', 'takeAnswer', 'updateSession',
 ]
 const dataUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`
 const forward = (root, names) => names.map((name) =>
   `export const ${name} = (...args) => globalThis.__fx0Runtime.${root}.${name}(...args)`).join('\n')
-const journalUrl = dataUrl(`export class SessionCleanupError extends Error {}\nexport const QUESTION_WAIT_MS = 600000\n` + forward('journal', journalNames))
+const journalUrl = dataUrl(`export class SessionCleanupError extends Error {}\nexport const QUESTION_WAIT_MS = 600000\nexport const MAX_CHAT_ASSETS = 50\nexport const MAX_DAILY_ASSETS = 100\n` + forward('journal', journalNames))
 const libfxUrl = dataUrl(forward('libfx', ['createFxAgent', 'createFxEngine']))
 const credentialUrl = dataUrl(forward('credentialStore', ['saveTurnCredential', 'saveTrialCredential', 'renewLatestCredential', 'readTurnCredential', 'readExecutionFunding', 'dropLoginCredentials', 'dropChatCredential']))
 const historyUrl = dataUrl(forward('history', ['recordTurn', 'recordGeneration']))
@@ -27,7 +29,7 @@ export const assertGenerationCredential = (host) => {
 }
 export const gatewayFetch = () => async () => Response.json({})`)
 registerHooks({ resolve(specifier, context, next) {
-  if (context.parentURL?.includes('/lib/')) {
+  if (context.parentURL?.includes('/lib/') && !context.parentURL.includes('/node_modules/')) {
     const fake = { libfx: libfxUrl, './journal': journalUrl, './turn-credential': credentialUrl, './history': historyUrl, './gateway-session': gatewayUrl }[specifier]
     if (fake) return { url: fake, shortCircuit: true }
     if (specifier.startsWith('./') && !/\.[cm]?[jt]s$/.test(specifier)) return next(`${specifier}.ts`, context)
@@ -403,6 +405,32 @@ test('an image prompt rejected during admission produces a visible error', async
   await runtime.submitPrompt(boundHost('image-error'), 'Ada', '', undefined, [{ type: 'image', mimeType: 'image/png', data: 'cG5n' }])
   assert.deepEqual(f.sent[0].promptOptions, { messageId: 'm1' })
   assert.ok(f.events.some(item => item.type === 'error' && item.text === 'prompt rejected: image admission failed'))
+})
+
+test('attached images upload while libfx admits the prompt; the model gets their references at once', async (t) => {
+  const f = fixture(t)
+  const images = [{ type: 'image', mimeType: 'image/png', data: 'cG5n' }]
+  let finishUpload
+  const stored = new Promise((resolve) => { finishUpload = resolve })
+  const submitted = runtime.submitPrompt(boundHost('asset-chat'), 'Ada', 'Use my logo', undefined, images, undefined, undefined, undefined, undefined,
+    { handles: ['AbCdEfGhIjKlMnOpQrStUvWx'], stored })
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  assert.equal(f.sent.length, 1, 'libfx has the prompt before the upload finished')
+  assert.equal(f.sent[0].input[0].text, '[Ada] Use my logo\n\n[Attached images the design can show: Image #1 = fx0-asset:AbCdEfGhIjKlMnOpQrStUvWx]')
+  finishUpload()
+  await submitted
+  assert.ok(!f.events.some((item) => item.type === 'error'))
+  assert.equal(f.calls.filter((call) => call[0] === 'cancel').length, 0)
+})
+
+test('if the upload fails after libfx admitted the prompt, the turn is cancelled with a visible error', async (t) => {
+  const f = fixture(t)
+  const stored = Promise.reject(new Error('Unable to store the attached images'))
+  stored.catch(() => {})
+  await runtime.submitPrompt(boundHost('asset-fail'), 'Ada', 'Use my logo', undefined, [{ type: 'image', mimeType: 'image/png', data: 'cG5n' }],
+    undefined, undefined, undefined, undefined, { handles: ['AbCdEfGhIjKlMnOpQrStUvWx'], stored })
+  assert.equal(f.calls.filter((call) => call[0] === 'cancel').length, 1, 'the admitted turn is stopped')
+  assert.ok(f.events.some((item) => item.type === 'error' && item.text === 'The attached images could not be stored. Send the message again.'))
 })
 
 test('a prompt libfx rejects ends its message with an error, and one needing renewal is refused before any write', async (t) => {

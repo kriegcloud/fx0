@@ -227,6 +227,92 @@ test('journal Redis integration uses isolated durable session state', async (t) 
       assert.equal(await journal.getActiveTurn(sessionId), null)
     })
 
+    await t.test('asset reservations enforce both caps atomically across concurrent requests', async () => {
+      const id = 'asset-caps'
+      const user = 'asset-caps-user'
+      const admitted = await Promise.all(Array.from({ length: 10 }, () => journal.reserveDesignAssets(id, user, 6)))
+      assert.equal(admitted.filter((result) => result === 'ok').length, 8)
+      assert.equal(admitted.filter((result) => result === 'chat').length, 2)
+      assert.equal(await redis.get(key(id, 'asset-count')), 48)
+      assert.equal(await journal.reserveDesignAssets('asset-caps-other', user, 50), 'ok')
+      assert.equal(await journal.reserveDesignAssets('asset-caps-third', user, 3), 'daily')
+      assert.equal(await redis.exists(key('asset-caps-third', 'asset-count')), 0)
+    })
+
+    await t.test('asset reservations and manifest commits are fenced throughout and after deletion', async () => {
+      const id = 'asset-deletion'
+      const user = 'asset-deletion-user'
+      const asset = { handle: 'AbCdEfGhIjKlMnOpQrStUvWx', mimeType: 'image/png', bytes: 5 }
+      await journal.updateSession(id, {})
+      assert.equal(await journal.reserveDesignAssets(id, user, 1), 'ok')
+      await journal.recordDesignAssets(id, [asset])
+      assert.equal((await journal.readDesignAssets(id)).size, 1)
+      const token = randomUUID()
+      assert.equal(await journal.claimSessionCleanup(id, token), 'claimed')
+      await assert.rejects(journal.reserveDesignAssets(id, user, 1), journal.SessionCleanupError)
+      await assert.rejects(journal.recordDesignAssets(id, [asset]), journal.SessionCleanupError)
+      assert.equal(await redis.get(key(id, 'asset-count')), 1)
+      assert.equal(await journal.finishSessionCleanup(id, token, null), true)
+      await assert.rejects(journal.reserveDesignAssets(id, user, 1), journal.SessionCleanupError)
+      await assert.rejects(journal.recordDesignAssets(id, [asset]), journal.SessionCleanupError)
+      assert.equal(await redis.exists(key(id, 'asset-count'), key(id, 'assets')), 0)
+    })
+
+    await t.test('cleanup completion refunds its original UTC day exactly once and preserves unrelated assets', async () => {
+      const id = 'asset-cleanup'
+      const user = 'asset-cleanup-user'
+      const yesterday = Date.UTC(2026, 0, 1, 23, 59)
+      const today = yesterday + 120_000
+      const a = { handle: 'AbCdEfGhIjKlMnOpQrStUvWx', mimeType: 'image/png', bytes: 5 }
+      const b = { ...a, handle: 'ZbCdEfGhIjKlMnOpQrStUvWx' }
+      assert.equal(await journal.reserveDesignAssets(id, user, 1, yesterday), 'ok')
+      assert.equal(await journal.reserveDesignAssets(id, user, 1, today), 'ok')
+      await journal.recordDesignAssets(id, [a, b])
+      const job = { sessionId: id, userId: user, handles: [a.handle], reservedAt: yesterday }
+      await journal.queueDesignAssetCleanup(job)
+      assert.deepEqual(await journal.pendingDesignAssetCleanups(), [job])
+      await Promise.all([journal.finishDesignAssetCleanup(job), journal.finishDesignAssetCleanup(job)])
+      // A delayed enqueue whose response was lost cannot reintroduce the job.
+      await journal.queueDesignAssetCleanup(job)
+      await journal.finishDesignAssetCleanup(job)
+      assert.equal(await redis.get(`${prefix}:user:${user}:assets:2026-01-01`), 0)
+      assert.equal(await redis.get(`${prefix}:user:${user}:assets:2026-01-02`), 1)
+      assert.equal(await redis.get(key(id, 'asset-count')), 1)
+      assert.deepEqual([...await journal.readDesignAssets(id)], [[b.handle, { mimeType: 'image/png', bytes: 5 }]])
+      assert.deepEqual(await journal.pendingDesignAssetCleanups(), [])
+    })
+
+    await t.test('rollback completion is idempotent when no retry enqueue was acknowledged', async () => {
+      const id = 'asset-cleanup-unqueued'
+      const user = 'asset-cleanup-unqueued-user'
+      const reservedAt = Date.now()
+      await journal.reserveDesignAssets(id, user, 2, reservedAt)
+      const job = { sessionId: id, userId: user, handles: ['AbCdEfGhIjKlMnOpQrStUvWx'], reservedAt }
+      await journal.finishDesignAssetCleanup(job)
+      await journal.queueDesignAssetCleanup(job)
+      await journal.finishDesignAssetCleanup(job)
+      assert.equal(await redis.get(key(id, 'asset-count')), 1)
+      assert.deepEqual(await journal.pendingDesignAssetCleanups(), [])
+    })
+
+    await t.test('pending asset rollback survives chat deletion without recreating deleted keys', async () => {
+      const id = 'asset-cleanup-deleted'
+      const user = 'asset-cleanup-deleted-user'
+      const reservedAt = Date.now()
+      await journal.updateSession(id, {})
+      await journal.reserveDesignAssets(id, user, 1, reservedAt)
+      const job = { sessionId: id, userId: user, handles: ['AbCdEfGhIjKlMnOpQrStUvWx'], reservedAt }
+      await journal.queueDesignAssetCleanup(job)
+      const token = randomUUID()
+      assert.equal(await journal.claimSessionCleanup(id, token), 'claimed')
+      assert.equal(await journal.finishSessionCleanup(id, token, null), true)
+      assert.deepEqual(await journal.pendingDesignAssetCleanups(), [job])
+      await journal.finishDesignAssetCleanup(job)
+      assert.equal(await redis.exists(key(id, 'asset-count'), key(id, 'assets')), 0)
+      assert.equal(await redis.get(`${prefix}:user:${user}:assets:${new Date(reservedAt).toISOString().slice(0, 10)}`), 0)
+      assert.deepEqual(await journal.pendingDesignAssetCleanups(), [])
+    })
+
     await t.test('deletion waits for a running turn, then removes everything but the tombstone', async () => {
       const id = 'delete-race'
       await journal.updateSession(id, { preferredEffort: null })
@@ -306,7 +392,7 @@ test('journal Redis integration uses isolated durable session state', async (t) 
       assert.deepEqual(await credentials.dropLoginCredentials('login-laptop'), [{ chatId: 'cred-laptop', turns: 1, latest: 'deleted' }])
       assert.equal(await credentials.readTurnCredential('cred-laptop'), null)
       assert.equal((await credentials.readExecutionFunding('cred-laptop', 1)).ok, false)
-      assert.equal(await redis.hlen(`${prefix}:funding:cred-laptop`), 1, 'sign-out keeps the funding record')
+      assert.equal(await redis.hlen(`${prefix}:paid-funding:cred-laptop`), 1, 'sign-out keeps the paid funding record')
       assert.equal((await credentials.readTurnCredential('cred-phone'))?.accessToken, 'access-phone-secret')
       await assert.rejects(credentials.saveTurnCredential('cred-expired', { ...session('login-x', 'x'), expiresAt: Date.now() - 1 }, 1), /Sign in again/)
       assert.equal(await credentials.readTurnCredential('cred-expired'), null, 'an expired token is never stored')

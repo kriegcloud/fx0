@@ -37,6 +37,8 @@ export const SIGN_IN_AGAIN = 'Sign in again to continue this chat, then resend.'
 // they live there because they read and write the chat's journal state.
 export interface ChatRuntime {
   toolHost(chatId: string, turnId: number, signal: AbortSignal): Promise<ToolHost>
+  // Also sees each design as the model writes it (agent.ts prefetches its images).
+  watchDraft?(observer: DesignDraftObserver | undefined): DesignDraftObserver | undefined
 }
 
 // Which model request of a turn this is: who sent it, and the conversation it
@@ -102,6 +104,7 @@ function chatFetch(
   chatId: () => Promise<string | null>,
   executionTurn: () => number | undefined,
   sender = 'parent',
+  watchDraft?: ChatRuntime['watchDraft'],
 ): typeof fetch {
   return async (input, init) => {
     const turn = executionTurn()
@@ -134,7 +137,7 @@ function chatFetch(
       if (!funding.ok && modelRequest) log(id, 'funding:refused', { turn: turn ?? null, reason: funding.refused })
       const credential = funding.ok ? funding.credential : null
       gateway.gatewaySession = !credential ? null : 'kind' in credential ? credential : { ...credential, email: '', loginAt: 0, isLoggedIn: true }
-      observer = draft
+      observer = modelRequest && watchDraft ? watchDraft(draft) : draft
     }
     try {
       if (localMode()) {
@@ -228,7 +231,7 @@ export function durableAgent(runtime: ChatRuntime, instructions: string): FxAgen
     ...(localMode() ? proxyOptions() : { apiKey: 'session-authenticated' }),
     fetch: (input, init) => {
       const id = requestHeader(input, init, 'x-session-id')
-      return chatFetch(() => chatOfRequest(id), () => drafts.turn(id))(input, init)
+      return chatFetch(() => chatOfRequest(id), () => drafts.turn(id), 'parent', runtime.watchDraft)(input, init)
     },
     onEvent: event => drafts.observe(event),
     // Hooks run synchronously before a restored engine starts its next request.
@@ -286,7 +289,7 @@ export async function runSubagent(
   const pinned = active?.id === turnId ? active.settings : undefined
   const engine = await createFxEngine({
     ...(localMode() ? proxyOptions() : { apiKey: 'session-authenticated' }),
-    fetch: chatFetch(async () => chatId, () => turnId, `subagent:${crypto.randomUUID()}`),
+    fetch: chatFetch(async () => chatId, () => turnId, `subagent:${crypto.randomUUID()}`, runtime.watchDraft),
     model: pinned
       ? { id: pinned.model, effort: localMode() ? 'default' as FxEffort : pinned.effort as FxEffort, fast: localMode() ? false : pinned.fast }
       : chatModel(host, funding.ok && 'kind' in funding.credential),

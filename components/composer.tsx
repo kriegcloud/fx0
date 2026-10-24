@@ -5,11 +5,12 @@ import { type GuestDraft } from './guest-draft'
 import { AuthRouteError, fetchUi } from './auth-ui'
 import { IconFileText } from './geist-icons'
 import ImagePreview from './image-preview'
+import { normalizeImage } from './attach-image'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { checkDesignMdUpload, DESIGN_MD_CATALOG, DESIGN_MD_MAX_BYTES } from '../lib/design-md'
 import { fastClick } from '../lib/fast-click'
-import { PROMPT_TEXT_LIMIT_ERROR, PROMPT_TEXT_MAX_BYTES, promptTextBytes } from '../lib/prompt-limits'
+import { PROMPT_IMAGE_MAX_COUNT, PROMPT_IMAGES_MAX_BASE64, PROMPT_TEXT_LIMIT_ERROR, PROMPT_TEXT_MAX_BYTES, promptTextBytes } from '../lib/prompt-limits'
 import { focusPrompt, registerPrompt } from '../lib/prompt-focus'
 import { Textarea } from './ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -33,6 +34,8 @@ export interface AttachedImage {
   data: string
   mimeType: string
   preview: string
+  // Made when the image is attached; missing for one restored from a guest draft.
+  thumbnail?: string | null
 }
 
 // A new chat's DESIGN.md: a catalog file by id, or an uploaded file's text.
@@ -40,8 +43,8 @@ const DOUBLE_ESCAPE_MS = 500
 
 export type DesignMdPick = { id: string; name: string } | { name: string; text: string }
 
-const IMAGE_CAP = 8
-const IMAGE_DATA_CAP = 3 * 1024 * 1024
+const IMAGE_CAP = PROMPT_IMAGE_MAX_COUNT
+const IMAGE_DATA_CAP = PROMPT_IMAGES_MAX_BASE64
 const PROMPT_MIN_HEIGHT = 64
 const PROMPT_MAX_HEIGHT = 160
 
@@ -86,20 +89,6 @@ function loadModelCatalog() {
   return modelCatalogPromise
 }
 
-function readImage(file: File): Promise<AttachedImage> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = String(reader.result)
-      const comma = result.indexOf(',')
-      if (!result.startsWith('data:image/') || comma < 0)
-        return reject(new Error('the selected file is not a supported image.'))
-      resolve({ data: result.slice(comma + 1), mimeType: file.type || 'image/png', preview: result })
-    }
-    reader.onerror = () => reject(new Error('unable to read the selected image.'))
-    reader.readAsDataURL(file)
-  })
-}
 
 // Geist ships only the outlined bolt; dropping its inner counter fills the shape.
 const LIGHTNING_OUTLINE =
@@ -663,7 +652,7 @@ export default function Composer({
     if (acceptedFiles.length === 0) return
     setAttachmentError('')
     try {
-      const nextImages = await Promise.all(acceptedFiles.slice(0, IMAGE_CAP).map(readImage))
+      const nextImages = await Promise.all(acceptedFiles.slice(0, IMAGE_CAP).map((file) => normalizeImage(file)))
       setImages((current) => {
         const available = Math.max(0, IMAGE_CAP - current.length)
         const combined = [...current, ...nextImages.slice(0, available)]
@@ -675,7 +664,7 @@ export default function Composer({
         return combined
       })
     } catch (error) {
-      setAttachmentError(`${(error as Error).message} Choose another image.`)
+      setAttachmentError(`${(error as Error).message} choose another image.`)
     }
   }
 
