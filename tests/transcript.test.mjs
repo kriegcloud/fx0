@@ -99,3 +99,19 @@ test('a page may publish its checkpoint after responding without delaying the tr
   await job()
   assert.equal(published, true)
 })
+
+test('a screenshot call reports its own time, not the time it waited for the preview to load', () => {
+  const view = { artifactRevision: 1 }
+  const state = compactTranscript([
+    { type: 'turn_start', id: 1, seq: 1, at: 0 },
+    // The capture event may land before the call's tool_start (the projector writes libfx's
+    // lines in batches); the wait travels on the tool_end instead.
+    { type: 'capture', turnId: 1, seq: 2, cid: 'c1', artifactRevision: 1, at: 1_009 },
+    { type: 'tool_start', turnId: 1, seq: 3, name: 'screenshot_design', at: 1_000 },
+    { type: 'tool_end', turnId: 1, seq: 4, name: 'screenshot_design', toolCallId: 'call_1', previewWaitMs: 515, content: 'Screenshot', at: 2_208 },
+  ], view)
+  const tool = state.entries.find((entry) => entry.type === 'tool')
+  assert.equal(tool.durationMs, 693)
+  assert.equal(tool.previewWaitMs, 515)
+  assert.equal(state.entries.filter((entry) => entry.type === 'tool').length, 1, 'capture events add no rows')
+})

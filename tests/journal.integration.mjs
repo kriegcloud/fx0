@@ -368,6 +368,55 @@ test('journal Redis integration uses isolated durable session state', async (t) 
         ok: false, reason: 'fenced', error: 'the chat was deleted before publishing',
       })
     })
+    await t.test('a capture is acknowledged, answered once, and fails fast when no tab takes it', async () => {
+      const sessionId = randomUUID()
+      const shot = { images: [{ mimeType: 'image/webp', data: 'AAAA' }, { mimeType: 'image/webp', data: 'BBBB' }], width: 1280, height: 1600 }
+      const replies = key(sessionId, 'capture-replies')
+
+      // Acknowledged, then answered with a photo: the call wakes as the photo arrives.
+      await journal.openCapture(sessionId, 'c1')
+      const started = Date.now()
+      const waiting = journal.awaitCapture(sessionId, 'c1', AbortSignal.timeout(15_000))
+      assert.equal(await journal.acknowledgeCapture(sessionId, 'c0'), false, 'another capture id is refused')
+      assert.equal(await journal.acknowledgeCapture(sessionId, 'c1'), true)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      assert.equal(await journal.answerCapture(sessionId, 'c1', { kind: 'shot', shot }), true)
+      assert.deepEqual(await waiting, { kind: 'shot', shot })
+      assert.ok(Date.now() - started < 2_500, `woke ${Date.now() - started} ms after waiting began, the photo came at 500 ms`)
+      assert.equal(await journal.answerCapture(sessionId, 'c1', { kind: 'failed', reason: 'too-large' }), false, 'an answer is accepted once')
+      assert.equal(await journal.acknowledgeCapture(sessionId, 'c1'), false, 'a replayed request finds its capture closed')
+
+      // A tab's failure ends the wait with its reason.
+      await journal.openCapture(sessionId, 'c2')
+      assert.equal(await journal.acknowledgeCapture(sessionId, 'c2'), true)
+      assert.equal(await journal.answerCapture(sessionId, 'c2', { kind: 'failed', reason: 'too-large' }), true)
+      assert.deepEqual(await journal.awaitCapture(sessionId, 'c2', AbortSignal.timeout(5_000)), { kind: 'failed', reason: 'too-large' })
+
+      // No tab acknowledges: the call gives up after the ack window, not the whole wait.
+      await journal.openCapture(sessionId, 'c3')
+      const silent = Date.now()
+      assert.deepEqual(await journal.awaitCapture(sessionId, 'c3', AbortSignal.timeout(15_000), 1_000), { kind: 'unanswered' })
+      assert.ok(Date.now() - silent < 3_000, `gave up after ${Date.now() - silent} ms`)
+      assert.equal(await journal.answerCapture(sessionId, 'c3', { kind: 'shot', shot }), false, 'a late photo is refused')
+
+      // Cancelled: the capture is withdrawn.
+      await journal.openCapture(sessionId, 'c4')
+      const cancel = new AbortController()
+      setTimeout(() => cancel.abort(), 300)
+      assert.deepEqual(await journal.awaitCapture(sessionId, 'c4', cancel.signal), { kind: 'cancelled' })
+      assert.equal(await journal.acknowledgeCapture(sessionId, 'c4'), false, 'a cancelled wait withdraws its capture')
+      assert.equal(await redis.exists(key(sessionId, 'capture'), replies), 0, 'nothing is left behind')
+    })
+
+    await t.test('a screenshot call records its preview wait under its call id, for its tool_end', async () => {
+      const sessionId = randomUUID()
+      await journal.recordPreviewWait(sessionId, 'call_a', 515.4)
+      await journal.recordPreviewWait(sessionId, 'call_b', 0)
+      assert.deepEqual([...await journal.readPreviewWaits(sessionId, ['call_a', 'call_b', 'call_missing'])], [['call_a', 515]])
+      assert.deepEqual([...await journal.readPreviewWaits(sessionId, [])], [])
+      assert.ok(await redis.pttl(key(sessionId, 'preview-waits')) > 0, 'the waits expire with the chat idle')
+    })
+
     await t.test('a chat credential is sealed, expires with its token, and sign-out drops only its own login', async () => {
       const session = (loginId, accessToken) => ({
         userId: 'user-a', loginId, loginAt: 1, email: 'a@example.com', accessToken, teamId: 'team_a',

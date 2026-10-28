@@ -661,6 +661,7 @@ test('signin uses trusted APP_URL, required scopes and PKCE, and one encrypted s
   assert.equal(url.searchParams.get('redirect_uri'), 'https://fx0.example/api/auth/callback')
   assert.equal(url.searchParams.get('scope'), 'openid profile email offline_access')
   assert.equal(url.searchParams.get('prompt'), 'consent')
+  assert.equal(url.searchParams.get('teamSelection'), 'single-team')
   const cookie = response.cookies.get(protocol.FLOW_COOKIE_NAME)
   assert.ok(cookie)
   const flow = await unsealData(cookie.value, { password: process.env.SESSION_SECRET, ttl: protocol.FLOW_TTL_SECONDS })

@@ -1,6 +1,6 @@
 // @ts-expect-error Node strip-types tests require the source extension.
 import { referenceTools } from './reference-tools.ts'
-import type { FxHostTool } from 'libfx'
+import type { FxHostTool, FxToolResult } from 'libfx'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { fetchPublicText } from './public-fetch.ts'
 
@@ -14,6 +14,11 @@ export interface ToolHost {
   storeResult(callId: number, text: string): void
   readResult(callId: number): string | undefined
   askUser(questions: AskQuestion[], signal: AbortSignal): Promise<Record<string, string>>
+  /** A photo of the published design from an open fx0 tab; throws when none sends one in time. */
+  captureDesign(
+    signal: AbortSignal,
+    options?: { toolCallId?: string; full?: boolean },
+  ): Promise<{ images: { mimeType: string; data: string }[]; revision: number; width?: number; height?: number; truncated?: boolean }>
   log(event: string, detail?: Record<string, unknown>): void
   spawnSubagent(task: string, signal: AbortSignal): Promise<string>
   capabilitySearch(query: string): { name: string; kind: string; description: string }[]
@@ -117,6 +122,37 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
       host.reportInvocation('edit_design')
       const edits = Array.isArray(input?.edits) ? input.edits : []
       return host.editDesign(edits.map((edit) => ({ oldString: edit.old_string, newString: edit.new_string })))
+    },
+  }
+
+  const screenshotDesign: FxHostTool = {
+    name: 'screenshot_design',
+    description:
+      'Screenshot the published design as the preview renders it, at the size the user sees it (1280x800 when the preview is closed). By default it shows the visible viewport; set full_page to see the whole page, top to bottom, in viewport-high images (at most 8). Use it to check the result when appearance matters, such as matching a reference or a layout you cannot verify from the markup, not after every edit; use full_page when the sections below the first screen matter. Needs an fx0 tab open and in front; on failure, continue without it.',
+    inputSchema: {
+      type: 'object',
+      properties: { full_page: { type: 'boolean', description: 'Whole page in viewport-high images instead of the visible viewport.' } },
+      additionalProperties: false,
+    },
+    async execute(input: { full_page?: boolean }, { signal, executionId }): Promise<FxToolResult | { error: string }> {
+      host.reportInvocation('screenshot_design')
+      const full = input?.full_page === true
+      const t0 = Date.now()
+      try {
+        const shot = await host.captureDesign(signal, { toolCallId: executionId, full })
+        const base64Bytes = shot.images.reduce((sum, image) => sum + image.data.length, 0)
+        host.log('tool:screenshot_design:done', { ms: Date.now() - t0, revision: shot.revision, images: shot.images.length, base64Bytes })
+        const size = `${shot.width ?? '?'}x${shot.height ?? '?'} CSS px`
+        const text = full
+          ? `Full-page screenshot of design revision ${shot.revision}, ${size}, in ${shot.images.length} viewport-high image${shot.images.length === 1 ? '' : 's'}, top to bottom.` +
+            (shot.truncated ? ' The page continues below the last image.' : '')
+          : `Screenshot of design revision ${shot.revision}, ${size}, as the preview shows it.`
+        return { type: 'libfx.tool-result', text, images: shot.images.map((image) => ({ type: 'image', ...image })) }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'unknown error'
+        host.log('tool:screenshot_design:error', { ms: Date.now() - t0, error: message })
+        return { error: `screenshot unavailable: ${message}` }
+      }
     },
   }
 
@@ -242,7 +278,7 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
     },
   }
 
-  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, webFetch, askUser, readToolResult, capabilitySearch, ...referenceTools(host)]
+  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, screenshotDesign, webFetch, askUser, readToolResult, capabilitySearch, ...referenceTools(host)]
 
   if (allowSubagent) {
     tools.push({

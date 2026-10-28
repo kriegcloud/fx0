@@ -34,6 +34,23 @@ export function clearUserStorage() {
 let authFailure: AuthRouteError | null = null
 const authRequests = new AbortController()
 
+// Shared path that closes the gate for a 401/403: fetchUi calls it for a JSON response,
+// and the preview calls it for a frame that failed with that status (components/preview-pane.tsx).
+// signOutAccount closes the gate directly, with its own synthetic 401.
+export function signalAuthRequired(status: 401 | 403): AuthRouteError {
+  if (authFailure) return authFailure
+  const error = new AuthRouteError(status)
+  authFailure = error
+  window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT, { detail: error.status }))
+  return error
+}
+
+// The gate's current error, with no side effects: a full document load checks it before
+// it starts, since a document load does not go through fetchUi.
+export function uiAuthError(): AuthRouteError | null {
+  return authFailure
+}
+
 export async function fetchUi(input: string, init?: RequestInit): Promise<Response> {
   if (authFailure) throw authFailure
   const signal = init?.signal ? AbortSignal.any([init.signal, authRequests.signal]) : authRequests.signal
@@ -43,13 +60,10 @@ export async function fetchUi(input: string, init?: RequestInit): Promise<Respon
     throw authFailure
   }
   if (response.status === 401 || response.status === 403) {
-    const error = new AuthRouteError(response.status)
-    authFailure = error
     void response.body?.cancel().catch(() => {})
-    window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT, { detail: error.status }))
     // Keep the app visible. The prompt gate owns the optional sign-in dialog;
     // a background request must never navigate away or discard an unsent draft.
-    throw error
+    throw signalAuthRequired(response.status)
   }
   return response
 }

@@ -325,6 +325,230 @@ test('an existing paid chat cannot claim free prompts; switching chats and new d
   assert.equal(ui.requests.filter(({ url }) => url === '/api/session?session=trial-chat').length, 1)
 })
 
+test('opening an uncached chat moves to its URL and an empty chat at once; a later click wins; a failed load returns to a new chat', async (t) => {
+  const summary = (id) => ({ id, title: id, createdAt: 1, lastActivity: 1, busy: false })
+  const snapshot = (id) => Response.json({ transcript: compactTranscript([{ type: 'user', seq: 1, id: 1, text: `Design ${id}` }], guestBoot.view), summary: summary(id) })
+  let releaseSlow
+  const slow = new Promise((resolve) => { releaseSlow = resolve })
+  const ui = browser(t, {
+    '/api/events?session=one&after=1': () => new Response(''),
+    '/api/events?session=fast&after=1': () => new Response(''),
+    '/api/model?session=one': () => Response.json({ model: '', effort: '', fast: false }),
+    '/api/model?session=fast': () => Response.json({ model: '', effort: '', fast: false }),
+    '/api/session?session=slow': () => slow.then(() => snapshot('slow')),
+    '/api/session?session=fast': () => snapshot('fast'),
+    '/api/session?session=broken': () => new Response('unavailable', { status: 503 }),
+  })
+  const pushes = []
+  const replaces = []
+  window.history.pushState = (_state, _title, url) => { pushes.push(String(url)); window.location.search = new URL(String(url)).search }
+  window.history.replaceState = (_state, _title, url) => { replaces.push(String(url)); window.location.search = new URL(String(url)).search }
+  const classes = new Set()
+  document.documentElement.classList = { add: (name) => classes.add(name), remove: (name) => classes.delete(name), toggle() {}, contains: (name) => classes.has(name) }
+  t.mock.method(console, 'error', () => {})
+  const app = mount(t, ui, {
+    ...guestBoot, user: { id: 'user-1', name: 'User', email: null, picture: null },
+    sessionId: 'one', sessions: [summary('one'), { ...summary('slow'), artifactRevision: 3 }, summary('fast'), summary('broken')],
+    events: [{ type: 'user', seq: 1, id: 1, text: 'Design one' }],
+  })
+  await tick()
+  app.render()
+  const rail = () => find(app.tree(), (node) => node.type === Sidebar).props
+  const entries = () => find(app.tree(), (node) => node.type === Transcript).props.entries
+
+  // The click moves at once: URL, highlighted item and the empty chat, before any response.
+  rail().onSelect('slow')
+  assert.match(pushes.at(-1), /[?&]s=slow\b/, 'the URL names the chat in the click itself')
+  assert.ok(classes.has('chat-url'), 'the empty chat shows its loading skeleton')
+  app.render()
+  assert.equal(rail().activeId, 'slow', 'the clicked chat is highlighted at once')
+  assert.deepEqual(entries(), [], 'the previous chat is no longer shown')
+  const preview = () => find(app.tree(), (node) => node.type === PreviewPane)?.props
+  assert.deepEqual(preview()?.source, { kind: 'design', sessionId: 'slow', revision: 3 },
+    'the preview starts loading the listed design before the transcript arrives')
+
+  // Typing while it opens does not reserve a new draft chat.
+  find(app.tree(), (node) => node.type === Composer).props.onDraftInput('typed while loading')
+  await tick()
+  assert.equal(ui.requests.filter(({ url }) => url === '/api/sessions').length, 0, 'no draft reservation while a chat opens')
+
+  // A later click wins; the slow response that lands afterwards is dropped.
+  rail().onSelect('fast')
+  await tick()
+  app.render()
+  assert.equal(entries()[0]?.text, 'Design fast')
+  releaseSlow()
+  await tick()
+  await tick()
+  app.render()
+  assert.equal(entries()[0]?.text, 'Design fast', 'the earlier load does not replace the chat clicked later')
+  assert.equal(rail().activeId, 'fast')
+  assert.equal(preview()?.source.sessionId, 'fast', 'the dropped chat\'s early preview is gone')
+  assert.ok(!classes.has('chat-url'))
+
+  // A failed load returns to a new chat with the usual notice, not an endless skeleton.
+  rail().onSelect('broken')
+  await tick()
+  await tick()
+  app.render()
+  assert.ok(!classes.has('chat-url'), 'no skeleton is left behind')
+  assert.doesNotMatch(replaces.at(-1), /[?&]s=/, 'the URL no longer names the chat that failed')
+  assert.equal(rail().activeId, 'draft')
+  assert.ok(find(app.tree(), (node) => node.props?.role === 'alert' && node.props.children === 'Unable to load that session. Try again.'))
+})
+
+test('New design while a chat opens wins over the late snapshot', async (t) => {
+  const summary = (id) => ({ id, title: id, createdAt: 1, lastActivity: 1, busy: false })
+  let releaseSlow
+  const slow = new Promise((resolve) => { releaseSlow = resolve })
+  const ui = browser(t, {
+    '/api/events?session=one&after=1': () => new Response(''),
+    '/api/model?session=one': () => Response.json({ model: '', effort: '', fast: false }),
+    '/api/session?session=slow': () => slow.then(() => Response.json({ transcript: compactTranscript([{ type: 'user', seq: 1, id: 1, text: 'Design slow' }], guestBoot.view), summary: summary('slow') })),
+  })
+  window.history.pushState = (_state, _title, url) => { window.location.search = new URL(String(url)).search }
+  window.history.replaceState = (_state, _title, url) => { window.location.search = new URL(String(url)).search }
+  const app = mount(t, ui, {
+    ...guestBoot, user: { id: 'user-1', name: 'User', email: null, picture: null },
+    sessionId: 'one', sessions: [summary('one'), summary('slow')],
+    events: [{ type: 'user', seq: 1, id: 1, text: 'Design one' }],
+  })
+  await tick()
+  app.render()
+  const rail = () => find(app.tree(), (node) => node.type === Sidebar).props
+  const entries = () => find(app.tree(), (node) => node.type === Transcript).props.entries
+  rail().onSelect('slow')
+  app.render()
+  rail().onNew()
+  app.render()
+  releaseSlow()
+  await tick()
+  await tick()
+  app.render()
+  assert.deepEqual(entries(), [], 'the late snapshot does not replace the new design')
+  assert.equal(rail().activeId, 'draft')
+  assert.doesNotMatch(window.location.search, /[?&]s=/, 'the URL stays on the new design')
+})
+
+test('Back to the new-chat page while a chat opens wins over the late snapshot', async (t) => {
+  const summary = (id) => ({ id, title: id, createdAt: 1, lastActivity: 1, busy: false })
+  let releaseSlow
+  const slow = new Promise((resolve) => { releaseSlow = resolve })
+  const ui = browser(t, {
+    '/api/session?session=slow': () => slow.then(() => Response.json({ transcript: compactTranscript([{ type: 'user', seq: 1, id: 1, text: 'Design slow' }], guestBoot.view), summary: summary('slow') })),
+  })
+  const app = mount(t, ui, { ...guestBoot, user: { id: 'user-1', name: 'User', email: null, picture: null }, sessionId: 'draft', sessions: [summary('slow')] })
+  await tick()
+  app.render()
+  const rail = () => find(app.tree(), (node) => node.type === Sidebar).props
+  const entries = () => find(app.tree(), (node) => node.type === Transcript).props.entries
+  rail().onSelect('slow')
+  app.render()
+  assert.equal(rail().activeId, 'slow')
+  navigate('')
+  app.render()
+  releaseSlow()
+  await tick()
+  await tick()
+  app.render()
+  assert.deepEqual(entries(), [], 'the late snapshot does not replace the new chat')
+  assert.equal(rail().activeId, 'draft')
+})
+
+for (const hasOtherChat of [true, false]) {
+  test(`deleting a chat while it opens drops its late snapshot (${hasOtherChat ? 'another chat remains' : 'last chat'})`, async (t) => {
+    const summary = (id) => ({ id, title: id, createdAt: 1, lastActivity: 1, busy: false })
+    let releaseSlow
+    const slow = new Promise((resolve) => { releaseSlow = resolve })
+    let reads = 0
+    const ui = browser(t, {
+      '/api/events?session=one&after=1': () => new Response(''),
+      '/api/events?session=slow&after=1': () => new Response(''),
+      '/api/model?session=one': () => Response.json({ model: '', effort: '', fast: false }),
+      '/api/model?session=slow': () => Response.json({ model: '', effort: '', fast: false }),
+      '/api/session?session=slow': (init) => {
+        if (init?.method === 'DELETE') return new Response('')
+        reads++
+        if (reads > 1) return new Response('Not found', { status: 404 })
+        return slow.then(() => Response.json({
+          transcript: compactTranscript([{ type: 'user', seq: 1, id: 1, text: 'Deleted chat content' }], guestBoot.view),
+          summary: summary('slow'),
+        }))
+      },
+    })
+    t.mock.method(console, 'error', () => {})
+    const app = mount(t, ui, {
+      ...guestBoot, user: { id: 'user-1', name: 'User', email: null, picture: null },
+      sessionId: hasOtherChat ? 'one' : 'draft',
+      sessions: hasOtherChat ? [summary('one'), summary('slow')] : [summary('slow')],
+      events: hasOtherChat ? [{ type: 'user', seq: 1, id: 1, text: 'Design one' }] : [],
+    })
+    await tick()
+    app.render()
+    const rail = () => find(app.tree(), (node) => node.type === Sidebar).props
+    rail().onSelect('slow')
+    app.render()
+    rail().onDelete('slow')
+    await tick()
+    app.render()
+    assert.ok(ui.requests.some(({ url, init }) => url === '/api/session?session=slow' && init?.method === 'DELETE'))
+    assert.ok(!rail().sessions.some((session) => session.id === 'slow'))
+    releaseSlow()
+    await tick()
+    await tick()
+    app.render()
+    assert.equal(rail().activeId, hasOtherChat ? 'one' : 'draft', 'the late snapshot cannot reopen the deleted chat')
+    assert.equal(rail().loadingId, null)
+    assert.notEqual(find(app.tree(), (node) => node.type === PreviewPane)?.props.source.sessionId, 'slow')
+
+    // Back/Forward to the deleted chat must ask the server, not reuse its late snapshot.
+    navigate('?s=slow')
+    await tick()
+    await tick()
+    app.render()
+    assert.equal(reads, 2, 'the deleted chat was not put back in the cache')
+    assert.equal(rail().activeId, 'draft')
+  })
+}
+
+test('once idle, the three most recent other chats load in the background and then open from the cache', async (t) => {
+  const summary = (id, at) => ({ id, title: id, createdAt: 1, lastActivity: at, busy: false })
+  const snapshot = (id) => Response.json({ transcript: compactTranscript([{ type: 'user', seq: 1, id: 1, text: `Design ${id}` }], guestBoot.view), summary: summary(id, 1) })
+  const ui = browser(t, {
+    '/api/events?session=one&after=1': () => new Response(''),
+    '/api/events?session=a&after=1': () => new Response(''),
+    '/api/model?session=one': () => Response.json({ model: '', effort: '', fast: false }),
+    '/api/model?session=a': () => Response.json({ model: '', effort: '', fast: false }),
+    '/api/session?session=a': () => snapshot('a'),
+    '/api/session?session=b': () => snapshot('b'),
+    '/api/session?session=c': () => snapshot('c'),
+  })
+  const app = mount(t, ui, {
+    ...guestBoot, user: { id: 'user-1', name: 'User', email: null, picture: null },
+    sessionId: 'one', sessions: [summary('one', 9), summary('a', 8), summary('b', 7), summary('c', 6), summary('d', 5)],
+    events: [{ type: 'user', seq: 1, id: 1, text: 'Design one' }],
+  })
+  await tick()
+  app.render()
+  const sessionRequests = () => ui.requests.filter(({ url }) => url.startsWith('/api/session?')).map(({ url }) => url)
+  assert.deepEqual(sessionRequests(), [], 'nothing loads before the app is idle')
+  for (const run of ui.timers.splice(0)) run()
+  await tick()
+  assert.deepEqual(sessionRequests().sort(), ['/api/session?session=a', '/api/session?session=b', '/api/session?session=c'],
+    'the open chat and older chats are not loaded')
+  app.render()
+  for (const run of ui.timers.splice(0)) run()
+  await tick()
+  assert.equal(sessionRequests().length, 3, 'once per page')
+
+  const rail = () => find(app.tree(), (node) => node.type === Sidebar).props
+  rail().onSelect('a')
+  await tick()
+  app.render()
+  assert.equal(find(app.tree(), (node) => node.type === Transcript).props.entries[0]?.text, 'Design a')
+  assert.equal(sessionRequests().filter((url) => url.endsWith('=a')).length, 1, 'opening it uses the background load')
+})
+
 test('the first prompt response retains trial eligibility when a signed-in draft becomes a cached chat', async (t) => {
   t.mock.method(console, 'info', () => {})
   const ui = browser(t, {
@@ -883,6 +1107,48 @@ test('the model picker opens on the selected model, then the featured ones, then
   const rows = []
   find(view.render(), (node) => { if (node.props?.role === 'option') rows.push(node.props.children?.[0]?.props?.children); return false })
   assert.deepEqual(rows.filter((name) => String(name).endsWith('-model')), ['default-model', 'z-model', 'a-model'])
+})
+
+for (const input of ['pointer', 'keyboard']) {
+  test(`selecting a model closes the picker immediately (${input})`, async (t) => {
+    let releaseSave
+    const saved = new Promise((resolve) => { releaseSave = resolve })
+    const ui = browser(t, {
+      '/api/model?session=chat-1': (init) => saved.then(() => Response.json(JSON.parse(init.body))),
+    })
+    const view = composerAt(ui, 'chat-1', {
+      model: 'a-model', defaultModel: 'default-model', effort: '', fast: false,
+      stored: { model: 'a-model', effort: '', fast: false },
+    })
+    await tick()
+    const picker = (tree) => find(tree, (node) => typeof node.props?.onOpenChange === 'function' && 'open' in node.props)
+    picker(view.render()).props.onOpenChange(true)
+    const tree = view.render()
+    assert.equal(picker(tree).props.open, true)
+    const row = find(tree, (node) => node.props?.role === 'option' && node.props.children?.[0]?.props?.children === 'z-model')
+    if (input === 'pointer') row.props.onPointerDown({ button: 0 })
+    else row.props.onClick({ detail: 0 })
+    const after = view.render()
+    assert.equal(picker(after).props.open, false, 'close without waiting for the settings request')
+    assert.equal(view.ref.current.getGeneration().model, 'z-model')
+    releaseSave()
+    await tick()
+    await tick()
+    view.render()
+    const writes = ui.requests.filter(({ url, init }) => url === '/api/model?session=chat-1' && init?.method === 'POST')
+    assert.equal(writes.length, 1)
+    assert.equal(JSON.parse(writes[0].init.body).model, 'z-model')
+  })
+}
+
+test('model search preserves catalog recency order for equally matching names', async (t) => {
+  const ui = browser(t)
+  const view = composerAt(ui, 'draft', { model: '', defaultModel: 'default-model', effort: '', fast: false })
+  await tick()
+  find(view.render(), (node) => node.props?.id === 'model-search').props.onChange({ target: { value: 'model' } })
+  const rows = []
+  find(view.render(), (node) => { if (node.props?.role === 'option') rows.push(node.props.children?.[0]?.props?.children); return false })
+  assert.deepEqual(rows, ['a-model', 'default-model', 'z-model'], 'equally ranked matches keep the API order, not the featured order')
 })
 
 test('a reloaded chat uses the settings the page rendered, and asks only for later chats', async (t) => {

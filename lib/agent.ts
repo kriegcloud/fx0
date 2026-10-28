@@ -6,6 +6,7 @@ import { remoteImagesEnabled } from './design-artifact'
 import { prefetchRemoteImages } from './remote-image-cache'
 import { deleteDesignAssets, storeDesignAssets, type PendingDesignAssets } from './design-assets'
 import { localMode, localSession } from './local-mode'
+import { CAPTURE_FAILURES, captureTrace } from './capture-protocol'
 import { chatSession, durableAgent, runSubagent, type ChatRuntime } from './libfx-agent'
 import { project } from './projector'
 import {
@@ -20,13 +21,16 @@ import type { TrialCredential } from './trial'
 import type { SessionData } from './secure-session'
 import {
   answerActiveQuestion,
+  awaitCapture,
   claimSessionCleanup,
   clearActiveQuestion,
+  closeCapture,
   currentSeq,
   finishSessionCleanup,
   getActiveQuestion,
   getActiveTurn,
   nextQuestionId,
+  openCapture,
   projectedCursor,
   publishDesignArtifact,
   QUESTION_WAIT_MS,
@@ -35,6 +39,7 @@ import {
   readEvents,
   readSession,
   readSessionView,
+  recordPreviewWait,
   releaseSessionCleanup,
   renewSessionCleanup,
   SessionCleanupError,
@@ -42,6 +47,8 @@ import {
   submitPrompt as journalPrompt,
   takeAnswer,
   updateSession,
+  type CaptureOutcome,
+  type CaptureShot,
   type InitialGeneration,
   type StoredSession,
 } from './journal'
@@ -116,6 +123,7 @@ function buildToolHost(host: SessionState, turnId: number): ToolHost {
     },
     readResult: (callId) => host.toolOutputs.get(callId),
     askUser: (questions, signal) => askUser(host, turnId, questions, signal),
+    captureDesign: (signal, options) => captureDesign(host, turnId, signal, options),
     log: (event, detail) => log(host.id, event, { turn: turnId, ...detail }),
     spawnSubagent: async (task, signal) => {
       log(host.id, 'subagent:start', { task: task.slice(0, 120) })
@@ -206,7 +214,9 @@ async function hydrateSession(host: SessionState): Promise<StoredSession | null>
 // Warm-up while the user types: the chat's state and the process's agent.
 export async function warmChat(host: SessionState): Promise<void> {
   await hydrateSession(host)
-  agent()
+  // newSessionId() loads libfx's durable backend (about 330 ms of module loading on a
+  // new instance) and returns an id without writing anything; the id is discarded.
+  await agent().newSessionId()
 }
 
 // Prompts this instance has submitted; the first one also pays for loading
@@ -378,6 +388,55 @@ async function askUser(host: SessionState, turnId: number, questions: AskQuestio
   }
   await emit(host, { type: 'question_resolved', qid, cancelled: true, turnId })
   throw new Error(signal.aborted ? 'cancelled' : 'no answer within 10 minutes')
+}
+
+// screenshot_design (lib/capture-protocol.ts): the tool call asks every open tab for a
+// photo of the published design and blocks until one arrives through Redis, wherever the
+// turn runs.
+// What the model is told when no photo arrives; a tab's own failure says why in its words.
+const CAPTURE_ERRORS: Record<Exclude<CaptureOutcome['kind'], 'shot' | 'failed'>, string> = {
+  unanswered: 'no fx0 tab is open and in front to take it',
+  timeout: 'the fx0 tab took the request but sent nothing in time',
+  cancelled: 'cancelled',
+}
+
+async function captureDesign(
+  host: SessionState,
+  turnId: number,
+  signal: AbortSignal,
+  { toolCallId, full = false }: { toolCallId?: string; full?: boolean } = {},
+): Promise<CaptureShot & { revision: number }> {
+  const started = performance.now()
+  const cid = crypto.randomUUID()
+  const [{ artifactRevision: revision }] = await Promise.all([readSessionView(host.id), openCapture(host.id, cid)])
+  if (!revision) {
+    await closeCapture(host.id, cid)
+    throw new Error('no design has been published yet')
+  }
+  const emitting = performance.now()
+  try {
+    await emit(host, {
+      type: 'capture', cid, artifactRevision: revision, turnId,
+      ...(full ? { captureFull: true as const } : {}),
+    })
+  } catch (error) {
+    await closeCapture(host.id, cid).catch(() => {})
+    throw error
+  }
+  const emitted = performance.now()
+  const emittedAt = Date.now()
+  const outcome = await awaitCapture(host.id, cid, signal)
+  const received = performance.now()
+  const server = { totalMs: received - started, setupMs: emitting - started, emitMs: emitted - emitting, emittedAt, receivedAt: Date.now() }
+  if (outcome.kind !== 'shot') {
+    log(host.id, 'capture:trace', { turn: turnId, outcome: outcome.kind, ...(outcome.kind === 'failed' ? { reason: outcome.reason } : {}), totalMs: Math.round(server.totalMs) })
+    throw new Error(outcome.kind === 'failed' ? CAPTURE_FAILURES[outcome.reason] : CAPTURE_ERRORS[outcome.kind])
+  }
+  const { shot } = outcome
+  log(host.id, 'capture:trace', { turn: turnId, outcome: 'shot', ...(shot.timing ? captureTrace(server, shot.timing) : { totalMs: Math.round(server.totalMs) }) })
+  const previewWaitMs = shot.timing?.previewWaitMs ?? 0
+  if (previewWaitMs > 0 && toolCallId) await recordPreviewWait(host.id, toolCallId, previewWaitMs)
+  return { ...shot, revision }
 }
 
 export async function answerQuestion(host: SessionState, qid: number, answers: Record<string, string>): Promise<boolean> {

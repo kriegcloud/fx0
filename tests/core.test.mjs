@@ -70,6 +70,7 @@ function toolHost() {
     storeResult: () => {},
     readResult: () => undefined,
     askUser: async () => ({}),
+    captureDesign: async () => ({ images: [{ mimeType: 'image/jpeg', data: 'AAAA' }], revision: 1 }),
     log: () => {},
     spawnSubagent: async () => 'done',
     capabilitySearch: () => [],
@@ -114,6 +115,7 @@ test('design mode exposes only design and common host tools', async () => {
       'read_design',
       'publish_design',
       'edit_design',
+      'screenshot_design',
       'web_fetch',
       'ask_user_question',
       'read_tool_result',
@@ -127,6 +129,23 @@ test('design mode exposes only design and common host tools', async () => {
     { edits: [{ old_string: 'black', new_string: 'blue' }, { old_string: 'Old', new_string: 'New' }] },
     { signal },
   )
+})
+
+test('screenshot_design gives the model its images with what they show, or why there are none', async () => {
+  const signal = new AbortController().signal
+  const calls = []
+  const host = { ...toolHost(), captureDesign: async (_signal, options) => {
+    calls.push(options)
+    return { images: [{ mimeType: 'image/webp', data: 'AAAA' }, { mimeType: 'image/webp', data: 'BBBB' }], width: 1280, height: 2400, truncated: true, revision: 3 }
+  } }
+  const screenshot = createTools(host).find((tool) => tool.name === 'screenshot_design')
+  const page = await screenshot.execute({ full_page: true }, { signal, executionId: 'call_9' })
+  assert.deepEqual(calls, [{ toolCallId: 'call_9', full: true }])
+  assert.deepEqual(page.images, [{ type: 'image', mimeType: 'image/webp', data: 'AAAA' }, { type: 'image', mimeType: 'image/webp', data: 'BBBB' }])
+  assert.equal(page.text, 'Full-page screenshot of design revision 3, 1280x2400 CSS px, in 2 viewport-high images, top to bottom. The page continues below the last image.')
+  const failing = createTools({ ...toolHost(), captureDesign: async () => { throw new Error('no fx0 tab is open and in front to take it') } })
+  assert.deepEqual(await failing.find((tool) => tool.name === 'screenshot_design').execute({}, { signal, executionId: 'call_10' }),
+    { error: 'screenshot unavailable: no fx0 tab is open and in front to take it' })
 })
 
 test('turn events update an existing sidebar session without mutating it', () => {
@@ -737,7 +756,7 @@ test('a design that does not start with its doctype is rejected with what it sta
 })
 
 // Run the served wrapper itself with a controlled clock and browser scheduling.
-async function frameWatchdog() {
+async function frameWatchdog(relay = '') {
   let now = 0
   let check
   let loads = 0
@@ -755,15 +774,18 @@ async function frameWatchdog() {
     querySelector: () => ({ append() {} }),
     addEventListener: (type, listener) => documentListeners.set(type, listener),
   }
-  const html = designFrameHtml(SAFE_DESIGN, 'watchdog-test')
+  const html = designFrameHtml(SAFE_DESIGN, 'watchdog-test', [], undefined, { relay })
   runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], {
     document,
+    parent: {},
     Date: { now: () => now },
     Blob,
-    URL: { createObjectURL: () => 'blob:design' },
+    AbortController,
+    URL: { createObjectURL: () => 'blob:design', revokeObjectURL() {} },
     addEventListener: (type, listener) => listeners.set(type, listener),
     setInterval: (callback) => { check = callback },
     setTimeout() {},
+    clearTimeout() {},
   })
   await new Promise(setImmediate)
   assert.equal(loads, 1, 'the initial artifact loads')
@@ -806,6 +828,14 @@ test('the preview watchdog tolerates suspended timers before the visibility even
   frame.tick()
   frame.heartbeat()
   assert.equal(frame.loads, 1)
+})
+
+test('the preview watchdog holds a silent design during capture, then resumes recovery', async () => {
+  const frame = await frameWatchdog('holdUntil=5000;')
+  for (let i = 0; i < 10; i++) frame.tick()
+  assert.equal(frame.loads, 1, 'capturing must not reload the document being photographed')
+  frame.tick()
+  assert.equal(frame.loads, 2, 'a silent design is recoverable again once the capture hold expires')
 })
 
 test('the preview watchdog still restores a design that stays silent while visible', async () => {

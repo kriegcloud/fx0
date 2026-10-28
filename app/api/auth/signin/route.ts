@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
       client_id: clientId, redirect_uri: `${origin}/api/auth/callback`, response_type: 'code',
       scope: 'openid profile email offline_access', state: flow.state, nonce: flow.nonce,
       code_challenge: pkceChallenge(flow.codeVerifier), code_challenge_method: 'S256',
+      // Each sign-in grants one team; more teams come from another consent.
+      teamSelection: 'single-team',
       ...(reauth ? { prompt: 'consent' } : {}),
     }).toString()
     const response = NextResponse.redirect(url)

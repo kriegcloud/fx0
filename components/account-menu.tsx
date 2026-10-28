@@ -159,8 +159,8 @@ export default function AccountMenu({ user, team = null, onSignOut, signOutStatu
           })}
           {onGrantTeams && (
             <button type="button" {...fastClick(onGrantTeams)} className={`${rowClassName} ${interactiveRow} text-foreground-secondary`}>
-              <span className="w-3 shrink-0 text-center" aria-hidden="true">+</span>
-              <span className="truncate">add a team</span>
+              <span className="w-3 shrink-0 text-center" aria-hidden="true">⇄</span>
+              <span className="truncate">switch</span>
             </button>
           )}
         </div>

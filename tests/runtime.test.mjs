@@ -7,11 +7,12 @@ import test from 'node:test'
 // own integration test; the agent's fetch has tests/libfx-agent.test.mjs.
 const journalNames = [
   'answerActiveQuestion', 'appendEvent', 'bindLibfxSession', 'chatOfLibfxSession', 'claimSessionCleanup',
-  'clearActiveQuestion', 'currentSeq', 'emitLive', 'finishSessionCleanup', 'finishTurnWork', 'getActiveQuestion',
-  'getActiveTurn', 'nextQuestionId', 'projectEvents', 'projectedCursor', 'publishDesignArtifact', 'readDesignArtifact',
-  'readDesignAssets', 'readDesignMd', 'readEvents', 'recordDesignAssets', 'releaseDesignAssets', 'reserveDesignAssets',
-  'finishDesignAssetCleanup', 'pendingDesignAssetCleanups', 'queueDesignAssetCleanup',
-  'readSession', 'readSessionView', 'readTurnWork', 'releaseSessionCleanup', 'renewSessionCleanup',
+  'awaitCapture', 'clearActiveQuestion', 'closeCapture', 'currentSeq', 'emitLive', 'finishDesignAssetCleanup',
+  'finishSessionCleanup', 'finishTurnWork', 'getActiveQuestion', 'getActiveTurn', 'nextQuestionId', 'openCapture',
+  'pendingDesignAssetCleanups', 'projectEvents', 'projectedCursor', 'publishDesignArtifact',
+  'queueDesignAssetCleanup', 'readDesignArtifact', 'readDesignAssets', 'readDesignMd', 'readEvents',
+  'readPreviewWaits', 'readSession', 'readSessionView', 'readTurnWork', 'recordDesignAssets', 'recordPreviewWait',
+  'releaseDesignAssets', 'releaseSessionCleanup', 'renewSessionCleanup', 'reserveDesignAssets',
   'setActiveQuestion', 'submitPrompt', 'takeAnswer', 'updateSession',
 ]
 const dataUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`
@@ -449,11 +450,12 @@ test('the agent offers HTML and common tools only; a tool runs on the chat its t
   const f = fixture(t)
   runtime.agent()
   const names = f.agentOptions.tools.map((tool) => tool.name)
-  assert.deepEqual(names, ['read_design', 'publish_design', 'edit_design', 'web_fetch', 'ask_user_question', 'read_tool_result', 'capability_search', 'subagent', 'web_search'])
+  assert.deepEqual(names, ['read_design', 'publish_design', 'edit_design', 'screenshot_design', 'web_fetch', 'ask_user_question', 'read_tool_result', 'capability_search', 'subagent', 'web_search'])
   const edit = f.agentOptions.tools.find((tool) => tool.name === 'edit_design')
   assert.equal(edit.idempotent, false)
   assert.equal(edit.writes, true)
   assert.equal(f.agentOptions.tools.find((tool) => tool.name === 'read_design').idempotent, true)
+  assert.equal(f.agentOptions.tools.find((tool) => tool.name === 'screenshot_design').idempotent, true)
 
   const ctx = { signal: new AbortController().signal, executionId: 'call-1', sessionId: 'wrun_1', context: { chatId: 'tool-chat', turnId: 4 } }
   const result = await edit.execute({ edits: [{ old_string: 'old', new_string: 'new' }, { old_string: '<body>', new_string: '<body class="x">' }] }, ctx)
@@ -620,6 +622,20 @@ test('a turn\'s history and subagents keep the settings it started with after a 
   assert.equal(history.model, 'anthropic/start-model')
   assert.equal(history.effort, 'high')
   assert.equal(history.fast, false)
+})
+
+test('the projector puts the preview wait of a screenshot call on its tool_end, and only there', async (t) => {
+  const f = fixture(t)
+  const entries = [
+    { type: 'tool_end', name: 'screenshot_design', toolCallId: 'shot', turnId: 1, at: 1 },
+    { type: 'tool_end', name: 'read_design', toolCallId: 'read', turnId: 1, at: 2 },
+    { type: 'tool_end', name: 'screenshot_design', toolCallId: 'unrecorded', turnId: 1, at: 3 },
+  ]
+  const asked = []
+  f.journal.readPreviewWaits = async (_id, ids) => { asked.push(...ids); return new Map([['shot', 515], ['read', 9]]) }
+  await projector.addPreviewWaits('chat', entries)
+  assert.deepEqual(asked, ['shot', 'unrecorded'], 'only screenshot calls are looked up')
+  assert.deepEqual(entries.map((entry) => entry.previewWaitMs), [515, undefined, undefined])
 })
 
 test('the projector copies a turn once however many follow it, then records its history and design', async (t) => {

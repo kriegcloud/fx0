@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { registerHooks } from 'node:module'
 import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
 import babel from 'next/dist/compiled/babel/core.js'
 import presetTypescript from 'next/dist/compiled/babel/preset-typescript.js'
 import presetReact from 'next/dist/compiled/babel/preset-react.js'
@@ -73,7 +74,7 @@ const mocks = {
     }
   `,
   'lib/history.ts': `
-    export async function readGeneration() { globalThis.securityTest.trace.push('history'); return null; }
+    export async function readGeneration() { const s = globalThis.securityTest; s.trace.push('history'); return s.generationHtml ?? null; }
     export async function recordTurn() { return true; }
     export async function recordGeneration() { return true; }
   `,
@@ -110,9 +111,11 @@ const mocks = {
     export async function readDesignArtifact(id) { record('artifact', id); return '<!doctype html><html><head><title>private design</title></head><body>private artifact</body></html>'; }
     export async function readDesignArtifactAt(id) {
       const s = record('artifact', id);
-      return { html: s.liveRevision === 0 ? null : '<!doctype html><html><head><title>private design</title></head><body>private artifact</body></html>', revision: s.liveRevision ?? 1 };
+      return { html: s.liveHtml ?? (s.liveRevision === 0 ? null : '<!doctype html><html><head><title>private design</title></head><body>private artifact</body></html>'), revision: s.liveRevision ?? 1 };
     }
     export async function currentSeq(id) { record('seq', id); return 0; }
+    export async function acknowledgeCapture(id) { record('capture-ack', id); return true; }
+    export async function answerCapture(id, cid, answer) { record('capture-answer', id); globalThis.securityTest.captureAnswer = answer; return true; }
   `,
   'lib/agent.ts': `
     function effect(name, host) {
@@ -263,7 +266,7 @@ function request(path, method = 'GET', id = own, body, origin = process.env.APP_
   return req
 }
 const routes = {}
-for (const name of ['answer', 'artifact', 'artifact-frame', 'artifact-image', 'cancel', 'debug', 'events',
+for (const name of ['answer', 'artifact', 'artifact-frame', 'capture', 'artifact-image', 'cancel', 'debug', 'events',
   'credits', 'model', 'prompt', 'session', 'sessions', 'teams', 'warm']) {
   routes[name] = await import(`../app/api/${name}/route.ts`)
 }
@@ -421,6 +424,63 @@ test('session routes return indistinguishable 404 for unknown and foreign IDs be
   }
 })
 
+test('a tab acknowledges a capture and reports a known failure; an unknown reason is refused', async () => {
+  const s = reset()
+  const post = (query) => routes.capture.POST(new Request(`https://fx0.example/api/capture?session=${own}&cid=${'1'.repeat(8)}-1111-1111-1111-${'1'.repeat(12)}&${query}`, {
+    method: 'POST', headers: { origin: process.env.APP_URL },
+  }))
+  const ack = await post('ack=1')
+  assert.equal(ack.status, 200)
+  assert.deepEqual(await ack.json(), { ok: true })
+  assert.ok(s.trace.includes('capture-ack'))
+  const failed = await post('failed=too-large')
+  assert.deepEqual(await failed.json(), { ok: true })
+  assert.deepEqual(s.captureAnswer, { kind: 'failed', reason: 'too-large' })
+  assert.equal((await post('failed=__proto__')).status, 400)
+  assert.equal((await post('failed=anything')).status, 400)
+  const unsized = await post('w=1')
+  assert.equal(unsized.status, 411, 'a photo without a length is refused before it is read')
+})
+
+test('a photo reaches the waiting call; one the route refuses still answers it, with the reason', async () => {
+  const s = reset()
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+  const upload = async (files, query = 'w=1280&h=800', length) => {
+    const form = new FormData()
+    for (const file of files) form.append('image', new Blob([file], { type: 'image/png' }))
+    const encoded = new Response(form)
+    const body = await encoded.arrayBuffer()
+    return routes.capture.POST(new Request(`https://fx0.example/api/capture?session=${own}&cid=${'2'.repeat(8)}-2222-2222-2222-${'2'.repeat(12)}&${query}`, {
+      method: 'POST', body,
+      headers: { origin: process.env.APP_URL, 'content-type': encoded.headers.get('content-type'), 'content-length': String(length ?? body.byteLength) },
+    }))
+  }
+  const accepted = await upload([PNG], 'w=1280&h=2400&truncated=1')
+  assert.deepEqual(await accepted.json(), { ok: true })
+  assert.equal(s.captureAnswer.kind, 'shot')
+  assert.deepEqual(s.captureAnswer.shot.images, [{ mimeType: 'image/png', data: PNG.toString('base64') }])
+  assert.deepEqual([s.captureAnswer.shot.width, s.captureAnswer.shot.height, s.captureAnswer.shot.truncated], [1280, 2400, true])
+  for (const [files, length, status, reason] of [
+    [[Buffer.from('not an image at all')], undefined, 415, 'refused'],
+    [Array(9).fill(PNG), undefined, 400, 'refused'],
+    [[PNG], 10 * 1024 * 1024, 413, 'too-large'],
+  ]) {
+    s.captureAnswer = null
+    assert.equal((await upload(files, undefined, length)).status, status)
+    assert.deepEqual(s.captureAnswer, { kind: 'failed', reason }, `a ${status} answers the call`)
+  }
+})
+
+test('a capture for an unknown or foreign chat is refused before its body or Redis', async () => {
+  for (const id of [foreign, fresh]) {
+    const s = reset()
+    const response = await routes.capture.POST(request('capture', 'POST', id))
+    assert.equal(response.status, 404)
+    assert.deepEqual(s.trace, ['auth', 'owner'])
+    assert.deepEqual(s.redisReads, [])
+  }
+})
+
 test('the same owner can steer, enqueue or recover a chat after switching teams, with one owner check', async () => {
   for (const [name, method, body] of sessionRoutes) {
     const oldContext = reset()
@@ -440,7 +500,7 @@ test('the same owner can steer, enqueue or recover a chat after switching teams,
 
 test('session routes and creation reject unverified team grants before runtime or writes', async () => {
   for (const teamId of [undefined, 'user_a']) {
-    for (const [name, method, body] of [...sessionRoutes, ['sessions', 'POST']]) {
+    for (const [name, method, body] of [...sessionRoutes, ['sessions', 'POST'], ['capture', 'POST']]) {
       const s = reset({ session: session({ teamId }) })
       const response = await routes[name][method](request(name, method, own, body))
       assert.equal(response.status, 403, `${method} ${name}`)
@@ -492,8 +552,8 @@ test('the artifact preview permits iframe origins but preserves opaque credentia
   // origin, which shows the address and opens it on the user's own click.
   assert.match(html, /window\.open\('about:blank','_blank'/)
   assert.match(html, /if\(!navigator\.userActivation\?\.isActive\)/)
-  assert.match(html, /if\(event\.source!==frame\.contentWindow\|\|event\.data\?\.token!==token\)return;/)
-  assert.match(html, /parent\.postMessage\(\{type:'fx0-artifact-open',url:event\.data\.url\},location\.origin\)/)
+  assert.match(html, /if\(event\.source!==frame\.contentWindow\|\|data\?\.token!==token\)return;/)
+  assert.match(html, /parent\.postMessage\(\{type:'fx0-artifact-open',url:data\.url\},location\.origin\)/)
   assert.match(html, /navigator\.userActivation\?\.isActive!==false/)
   assert.doesNotMatch(html, /allow-popups-to-escape-sandbox/)
   assert.match(html, /setAttribute\('credentialless',''\)/)
@@ -599,8 +659,10 @@ test('the artifact preview paints no white of its own before the design does', a
   reset()
   const html = await (await routes['artifact-frame'].GET(request('artifact-frame', 'GET', own, undefined, 'null'))).text()
   // The app's color scheme keeps the wrapper transparent over the app's background.
-  assert.match(html, /:root\{color-scheme:light dark\}/)
-  assert.doesNotMatch(html, /background:#fff/)
+  // The design (and the capture library) travel inside the wrapper's script; only its own markup counts.
+  const wrapper = html.slice(0, html.indexOf('<script>'))
+  assert.match(wrapper, /:root\{color-scheme:light dark\}/)
+  assert.doesNotMatch(wrapper, /background:#fff/)
 })
 
 test('the browser keeps a preview only when its URL names the revision that is live', async () => {
@@ -628,6 +690,199 @@ test('the browser keeps a preview only when its URL names the revision that is l
   const missing = await frame('&v=1')
   assert.equal(missing.status, 404)
   assert.equal(missing.headers.get('cache-control'), 'private, no-store')
+})
+
+test('preview update data names the actual revision, never shares HTML validators, and contains no host bootstrap', async () => {
+  const state = reset({ liveRevision: 4 })
+  const req = request('artifact-frame', 'GET', `${own}&v=2&format=json`)
+  req.headers.set('if-none-match', `"${own}:4"`)
+  const response = await routes['artifact-frame'].GET(req)
+  assert.equal(response.status, 200)
+  assert.match(response.headers.get('content-type'), /^application\/json/)
+  assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  assert.equal(response.headers.get('etag'), null)
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff')
+  const data = await response.json()
+  assert.equal(data.protocol, 1)
+  assert.equal(data.sessionId, own)
+  assert.equal(data.revision, 4)
+  assert.equal(data.sourceHtml, data.renderHtml)
+  assert.deepEqual(data.images, [])
+  assert.doesNotMatch(JSON.stringify(data), /fx0-preview-ready|Content-Security-Policy|user-token|secret-refresh/)
+  assert.equal(state.redisReads.filter(id => id === own).length, 1, 'source and revision come from one read')
+})
+
+test('preview JSON uses the same ownership boundary and refuses missing artifacts or unknown formats', async () => {
+  const state = reset()
+  assert.equal((await routes['artifact-frame'].GET(request('artifact-frame', 'GET', `${foreign}&format=json`))).status, 404)
+  assert.equal(state.redisReads.includes(foreign), false)
+  state.liveRevision = 0
+  const missing = await routes['artifact-frame'].GET(request('artifact-frame', 'GET', `${own}&format=json`))
+  assert.equal(missing.status, 404)
+  assert.equal(missing.headers.get('cache-control'), 'private, no-store')
+  assert.equal((await routes['artifact-frame'].GET(request('artifact-frame', 'GET', `${own}&format=unknown`))).status, 400)
+})
+
+const frameRequest = (query = '', headers = {}) => {
+  const req = request('artifact-frame', 'GET', own, undefined, 'null')
+  return new Request(`${req.url}${query}`, { headers: { ...Object.fromEntries(req.headers), ...headers } })
+}
+const reportsStatus = (status) => new RegExp(`parent\\.postMessage\\(\\{type:'fx0-preview-error',protocol:1,status:${status}\\},location\\.origin\\)`)
+
+test('a failed preview frame reports its status by message and keeps its headers and session cookies', async () => {
+  process.env.SESSION_SECRET ??= 'deterministic-route-security-secret-32+'
+  const { grantCookieName } = await import('../lib/auth-protocol.ts')
+  const s = reset({ session: null })
+  const stale = `${grantCookieName('c'.repeat(32))}=expired`
+  const response = await routes['artifact-frame'].GET(frameRequest('', { 'sec-fetch-dest': 'iframe', cookie: stale }))
+  assert.equal(response.status, 401)
+  assert.match(response.headers.get('content-type'), /^text\/html; charset=utf-8/)
+  assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff')
+  assert.equal(response.headers.get('referrer-policy'), 'no-referrer')
+  assert.equal(response.headers.get('content-length'), null)
+  // The session renewal that the wrapper itself adds to every response survives the rewrap.
+  assert.ok(response.headers.getSetCookie().some((cookie) => cookie.startsWith(`${grantCookieName('c'.repeat(32))}=`)))
+  const html = await response.text()
+  const nonce = /<script nonce="([0-9a-f]{32})">/.exec(html)?.[1]
+  assert.ok(nonce)
+  assert.equal(response.headers.get('content-security-policy'), `default-src 'none'; script-src 'nonce-${nonce}'; frame-ancestors 'self'`)
+  assert.match(html, reportsStatus(401))
+  assert.doesNotMatch(html, new RegExp(`${own}|user-token|secret-refresh|${grantCookieName('c'.repeat(32))}`))
+  // Signed out: only the session read runs; no ownership query, journal read, history read or runtime work.
+  assert.deepEqual(s.trace.filter((step) => step !== 'auth'), [])
+  assert.deepEqual(s.queries, [])
+  assert.deepEqual(s.redisReads, [])
+})
+
+test('frame errors keep their statuses; healthy, revalidated and JSON responses are unchanged', async () => {
+  const frame = { 'sec-fetch-dest': 'iframe' }
+  const cases = [
+    ['missing design', '', { liveRevision: 0 }, 404],
+    ['unrenderable design', '', { liveHtml: '<p>no doctype</p>' }, 422],
+    ['unknown format', '&format=unknown', {}, 400],
+  ]
+  for (const [name, query, state, status] of cases) {
+    reset(state)
+    const response = await routes['artifact-frame'].GET(frameRequest(query, frame))
+    assert.equal(response.status, status, name)
+    assert.match(await response.text(), reportsStatus(status), name)
+  }
+  reset({ liveHtml: '<p>no doctype</p>' })
+  const unprepared = await routes['artifact-frame'].GET(frameRequest(''))
+  assert.equal(unprepared.status, 422)
+  assert.match(await unprepared.text(), /could not be prepared/)
+
+  reset({ liveRevision: 2 })
+  const healthy = await routes['artifact-frame'].GET(frameRequest('&v=2', frame))
+  assert.equal(healthy.status, 200)
+  const html = await healthy.text()
+  assert.doesNotMatch(html, /parent\.postMessage\(\{type:'fx0-preview-error'/)
+  const revalidated = await routes['artifact-frame'].GET(frameRequest('&v=2', { ...frame, 'if-none-match': healthy.headers.get('etag') }))
+  assert.equal(revalidated.status, 304)
+  assert.equal(await revalidated.text(), '')
+
+  reset({ liveRevision: 0 })
+  const json = await routes['artifact-frame'].GET(frameRequest('&format=json', frame))
+  assert.equal(json.status, 404)
+  assert.match(json.headers.get('content-type'), /^application\/json/)
+  assert.deepEqual(await json.json(), { error: 'No design artifact.' })
+  const programmatic = await routes['artifact-frame'].GET(frameRequest('&format=json', { 'sec-fetch-dest': 'empty' }))
+  assert.equal(programmatic.status, 404)
+  assert.match(programmatic.headers.get('content-type'), /^application\/json/)
+  assert.deepEqual(await programmatic.json(), { error: 'No design artifact.' })
+})
+
+test('a failed preview frame answers the parent status handshake only from its own parent, with constant data', async () => {
+  reset({ liveRevision: 0 })
+  const response = await routes['artifact-frame'].GET(frameRequest('', { 'sec-fetch-dest': 'iframe' }))
+  const html = await response.text()
+  const [, nonce, script] = /<script nonce="([0-9a-f]{32})">([\s\S]*?)<\/script>/.exec(html)
+  assert.equal(response.status, 404)
+  assert.equal(response.headers.get('content-security-policy'), `default-src 'none'; script-src 'nonce-${nonce}'; frame-ancestors 'self'`)
+  // Only the status reaches the script: no session, user, token or design identity.
+  assert.doesNotMatch(script, new RegExp(`${own}|session|user|token|secret`))
+  const posts = []
+  const parent = { postMessage: (message, target) => posts.push([JSON.stringify(message), target]) }
+  const listeners = []
+  vm.runInNewContext(script, { parent, location: { origin: 'https://fx0.example' }, addEventListener: (type, listener) => listeners.push([type, listener]) })
+  const error = JSON.stringify({ type: 'fx0-preview-error', protocol: 1, status: 404 })
+  assert.deepEqual(posts, [[error, 'https://fx0.example']], 'the initial post reports the status without waiting')
+  const deliver = (data, { source = parent, origin = 'https://fx0.example' } = {}) => {
+    for (const [type, listener] of listeners) if (type === 'message') listener({ data, source, origin })
+  }
+  deliver({ type: 'fx0-preview-status', protocol: 1 })
+  assert.deepEqual(posts[1], [error, 'https://fx0.example'], 'the status handshake from the parent is answered')
+  deliver({ type: 'fx0-preview-status', protocol: 1 }, { source: {} })
+  deliver({ type: 'fx0-preview-status', protocol: 1 }, { origin: 'https://evil.example' })
+  deliver({ type: 'fx0-preview-status', protocol: 2 })
+  deliver({ type: 'fx0-artifact-open', protocol: 1, url: 'https://example.com' })
+  deliver(null)
+  assert.equal(posts.length, 2, 'other windows, origins, types and protocols get no answer')
+})
+
+test('an iframe asking for a newer revision than is live fails before any design is prepared', async () => {
+  const s = reset({ liveRevision: 2 })
+  const stale = await routes['artifact-frame'].GET(frameRequest('&v=3', { 'sec-fetch-dest': 'iframe' }))
+  assert.equal(stale.status, 404)
+  assert.equal(stale.headers.get('etag'), null)
+  const html = await stale.text()
+  assert.match(html, reportsStatus(404))
+  // The wrapper's JSON body is dropped: no design, image marker, runtime or frame remains.
+  assert.doesNotMatch(html, /private artifact|frame-root|artifact-image|connect-src|Design artifact preview/)
+  assert.equal(stale.headers.get('cache-control'), 'private, no-store')
+  // Ownership and sign-in still come first: a signed-out frame answers 401, not the version check.
+  reset({ session: null, liveRevision: 2 })
+  assert.equal((await routes['artifact-frame'].GET(frameRequest('&v=3', { 'sec-fetch-dest': 'iframe' }))).status, 401)
+  assert.equal(s.redisReads.length, 1, 'only the stale request read the journal')
+})
+
+test('an iframe asking for the current or a newer revision is served; invalid versions and past revisions are unaffected', async () => {
+  for (const [live, v] of [[3, '&v=3'], [4, '&v=3']]) {
+    reset({ liveRevision: live })
+    const response = await routes['artifact-frame'].GET(frameRequest(v, { 'sec-fetch-dest': 'iframe' }))
+    assert.equal(response.status, 200, `live ${live} ${v}`)
+    assert.match(await response.text(), /frame-root/)
+  }
+  reset({ liveRevision: 2 })
+  for (const query of ['&v=abc', '&v=0', '&v=-1', '&v=1.5', '']) {
+    const response = await routes['artifact-frame'].GET(frameRequest(query, { 'sec-fetch-dest': 'iframe' }))
+    assert.equal(response.status, 200, query || 'no v')
+  }
+  reset({ liveRevision: 2, generationHtml: '<!doctype html><html><head><title>old</title></head><body>old version</body></html>' })
+  const past = await routes['artifact-frame'].GET(frameRequest('&revision=1&v=3', { 'sec-fetch-dest': 'iframe' }))
+  assert.equal(past.status, 200)
+  assert.match(await past.text(), /frame-root/)
+})
+
+test('programmatic HTML and JSON keep their current-revision contracts for a newer v', async () => {
+  reset({ liveRevision: 2 })
+  const html = await routes['artifact-frame'].GET(frameRequest('&v=3', { 'sec-fetch-dest': 'empty' }))
+  assert.equal(html.status, 200)
+  assert.equal(html.headers.get('cache-control'), 'private, no-store')
+  assert.match(await html.text(), /frame-root/)
+  const json = await routes['artifact-frame'].GET(frameRequest('&v=3&format=json', { 'sec-fetch-dest': 'iframe' }))
+  assert.equal(json.status, 200)
+  assert.equal((await json.json()).revision, 2)
+  const programmaticJson = await routes['artifact-frame'].GET(frameRequest('&v=3&format=json'))
+  assert.equal((await programmaticJson.json()).revision, 2)
+})
+
+test('a preview frame status is accepted only as an integer error from 400 to 599', async () => {
+  const { isPreviewErrorStatus } = await import('../lib/preview-update.ts')
+  for (const status of [400, 401, 404, 422, 503, 599]) assert.equal(isPreviewErrorStatus(status), true, String(status))
+  for (const status of [0, 200, 304, 399, 600, 404.5, Number.NaN, Infinity, '404', null, undefined, { status: 404 }]) {
+    assert.equal(isPreviewErrorStatus(status), false, String(status))
+  }
+})
+
+test('image-free wrappers can prepare later images without granting the design network access', async () => {
+  reset()
+  const response = await routes['artifact-frame'].GET(request('artifact-frame'))
+  assert.match(response.headers.get('content-security-policy'), /connect-src https:\/\/fx0\.example\/api\/artifact-image(?:;|$)/)
+  const html = await response.text()
+  assert.match(html, /connect-src 'none'/)
+  assert.doesNotMatch(html, /allow-same-origin|allow-popups/)
 })
 
 test('the design download is the stored HTML, served so this origin never renders it', async () => {
@@ -789,7 +1044,12 @@ test('model catalog is public, credential-free, shared, and never reports an aut
     return calls.length === 1
       ? Response.json({ data: [
         { id: 'anthropic/fast', type: 'language', tags: ['fast'], reasoning_options: [{ type: 'effort', values: ['low', 'high'] }] },
-        { id: 'openai/image', type: 'image' },
+        { id: 'openai/image', type: 'image', released: 900 },
+        { id: 'deepseek/older', type: 'language', released: 100 },
+        { id: 'deepseek/newest', type: 'language', released: 300 },
+        { id: 'deepseek/newer', type: 'language', released: 200 },
+        { id: 'deepseek/newest', type: 'language', released: 300 },
+        { id: 'zai/undated', type: 'language' },
       ] })
       : new Response(null, { status: 401 })
   })
@@ -798,7 +1058,10 @@ test('model catalog is public, credential-free, shared, and never reports an aut
   // Shared by everyone, so the CDN may serve it.
   assert.equal(first.headers.get('cache-control'), 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400')
   const { defaultModel, ...catalog } = await first.json()
-  assert.deepEqual(catalog, { models: ['anthropic/fast'], efforts: { 'anthropic/fast': ['low', 'high'] }, fast: ['anthropic/fast'], featured: [] })
+  assert.deepEqual(catalog, {
+    models: ['deepseek/newest', 'deepseek/newer', 'deepseek/older', 'anthropic/fast', 'zai/undated'],
+    efforts: { 'anthropic/fast': ['low', 'high'] }, fast: ['anthropic/fast'], featured: [],
+  }, 'models are newest first, deduplicated, with undated entries last and image models excluded')
   assert.equal(typeof defaultModel, 'string')
   assert.equal(calls[0].url, 'https://ai-gateway.vercel.sh/coding-agent/v1/models')
   assert.equal(calls[0].headers.get('authorization'), null)

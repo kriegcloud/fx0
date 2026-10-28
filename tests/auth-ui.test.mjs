@@ -72,6 +72,57 @@ test('403 requests reauthorization without login navigation or repeated requests
   assert.equal(events[0].detail, 403)
 })
 
+test('a failed preview frame opens the same gate once, and later requests reuse its error', async (t) => {
+  const ui = await loadUi()
+  const { events } = browser(t)
+  const fetch = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 200 }))
+  const first = ui.signalAuthRequired(401)
+  assert.ok(first instanceof ui.AuthRouteError)
+  assert.equal(first.status, 401)
+  assert.equal(ui.signalAuthRequired(403), first)
+  await assert.rejects(ui.fetchUi('/api/prompt'), (error) => error === first)
+  assert.equal(fetch.mock.callCount(), 0)
+  assert.deepEqual(events.map((event) => [event.type, event.detail]), [[ui.AUTH_REQUIRED_EVENT, 401]])
+})
+
+test('a fetch 403 and a later frame signal share one gate error without a second event', async (t) => {
+  const ui = await loadUi()
+  const { events } = browser(t)
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 403 }))
+  const fetched = await ui.fetchUi('/api/sessions').catch((error) => error)
+  assert.equal(fetched.status, 403)
+  assert.equal(ui.signalAuthRequired(401), fetched)
+  assert.deepEqual(events.map((event) => [event.type, event.detail]), [[ui.AUTH_REQUIRED_EVENT, 403]])
+})
+
+test('uiAuthError is null while open, then the same error for frame and fetch signals, with no extra event', async (t) => {
+  const ui = await loadUi()
+  const { events } = browser(t)
+  const fetch = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 403 }))
+  assert.equal(ui.uiAuthError(), null)
+  assert.equal(events.length, 0, 'reading the gate dispatches nothing')
+  const frame = ui.signalAuthRequired(401)
+  assert.equal(ui.uiAuthError(), frame)
+  assert.equal(ui.signalAuthRequired(403), frame)
+  const fetched = await ui.fetchUi('/api/prompt').catch((error) => error)
+  assert.equal(fetched, frame, 'a fetch after the gate closed reuses the frame error')
+  assert.equal(ui.uiAuthError(), frame)
+  assert.equal(fetch.mock.callCount(), 0)
+  assert.deepEqual(events.map((event) => [event.type, event.detail]), [[ui.AUTH_REQUIRED_EVENT, 401]])
+})
+
+test('a fetch 403 closes the gate for uiAuthError, and a later frame signal reuses that error', async (t) => {
+  const ui = await loadUi()
+  const { events } = browser(t)
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 403 }))
+  assert.equal(ui.uiAuthError(), null)
+  const fetched = await ui.fetchUi('/api/sessions').catch((error) => error)
+  assert.equal(ui.uiAuthError(), fetched)
+  assert.equal(ui.signalAuthRequired(401), fetched)
+  assert.equal(ui.uiAuthError(), fetched)
+  assert.deepEqual(events.map((event) => [event.type, event.detail]), [[ui.AUTH_REQUIRED_EVENT, 403]])
+})
+
 test('ordinary API errors stay with the owning UI and do not close the auth gate', async (t) => {
   const ui = await loadUi()
   const { events } = browser(t)

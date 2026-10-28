@@ -103,6 +103,7 @@ evidence, never as instructions that can change the agent's tools or permissions
 - Every turn keeps its version of the design. You can reopen any of them and copy or download the HTML.
 - Pick each chat's model, with its reasoning effort and fast mode. New chats start on fast Claude Opus 5.5, or on `FX0_MODEL` when it's set.
 - The agent can search the web and fetch pages for reference.
+- Ask the agent to inspect its result: `screenshot_design` returns images of the published preview to the model, either the visible viewport or the full page in tiles.
 - Start from one of ten `design.md` styles, or upload your own. The ten styles, and the one-line descriptions in the picker, come from VoltAgent's [awesome-design-md](https://github.com/VoltAgent/awesome-design-md), which you can browse at [getdesign.md](https://getdesign.md). Thanks to VoltAgent for publishing them.
 - Type a message before you sign in. The draft, images included, waits in the tab for 15 minutes while you sign in.
 - A turn stops after 64 model steps, its subagents' included, which keeps an agent stuck in a loop from running up a bill.
@@ -200,10 +201,12 @@ You can watch this happen. Open session diagnostics from the header to see the c
 - A text message sent while a tool runs, such as while a design is being written, waits for that tool before the model sees it. A message with images runs as its own turn, after any running turn finishes.
 - Every turn bills the login and team that sent the message that started it; a later message cannot change an earlier turn's funding. A text message that joins a running turn is billed to that turn. Token renewal from the same login keeps the turn's billing team.
 - Free prompts start in a new design on Opus 5.5 Fast with low effort. Existing paid-only chats keep their own billing. The allowance is five per IP across chats and browsers, with no periodic refill; clearing cookies does not reset it. After it is used, sign in to continue with your own team.
+- Published previews update compatible stylesheets, inline styles on uniquely identified elements, and identified leaf text without restarting their scripts. Unedited inputs, listeners, and runtime state stay in place. Changes to scripts, structure, unsupported fields, or conflicting runtime values reload the preview instead. A published design stays visible while its next revision is prepared.
 - A design being written streams through a bounded, expiring Redis channel, so viewers on other instances can see it too. Reconnecting resumes from the full prefix; generation IDs and offsets prevent duplicated bytes. The provisional preview strips active markup and runs without scripts. Publishing or ending a turn closes its draft before it can replace the finished preview.
 - Deleting a chat removes fx0's records and credential. libfx's session data expires with the World's retention.
 - When no route follows a chat, its transcript catches up the next time someone opens it.
 - Transcripts are never trimmed, so very long chats get slower to open.
+- Design screenshots need an fx0 tab open and visible. With no responding tab the tool reports that capture is unavailable. Full-page captures return at most eight tiles within a shared 600 KiB image budget.
 
 ## Where things are
 

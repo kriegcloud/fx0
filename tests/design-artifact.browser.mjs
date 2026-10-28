@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { markRemoteImages } from '../lib/remote-image.ts'
 import { DESIGN_ARTIFACT_EMBEDDED_CSP, DESIGN_FRAME_CSP, designFrameCsp, designFrameHtml, MAX_EMBEDDED_IMAGE_BYTES, prepareDesignArtifactHtml, validateDesignArtifactHtml } from '../lib/design-artifact.ts'
+import { DESIGN_CAPTURE_RELAY, designCaptureScript } from '../lib/design-capture.ts'
 
 // Opt-in: runs real Chrome headless on this machine. Set CHROME_PATH for another browser binary.
 const CHROME = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -183,6 +184,229 @@ for (const name of ['small', 'large', 'repeat']) open(name)
     assert.equal(hits.pixel, 1, 'the next revision embeds the image from the browser cache')
     assert.equal(out.large?.embedded, 4, 'a design past what a data: URL can carry still renders')
     assert.equal(out.repeat?.embedded, Math.floor(MAX_EMBEDDED_IMAGE_BYTES / repeated.length), 'the budget counts every place an image is written')
+  } finally {
+    server.closeAllConnections()
+    server.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+// screenshot_design: the app mounts a preview the way DesignCapture does
+// (fixed, invisible, under the page, in a phone-sized window) and asks it for photos once
+// it has painted: the viewport, then the whole page. The viewport must come back as one
+// 1280x800 WebP of the design, the page as viewport-high tiles from the top (even when
+// html and body are only viewport-high and the content overflows them), and the remote
+// url() the design names must never reach the network, capture included.
+test('in Chrome, a hidden preview photographs its viewport and its whole page without any network', async () => {
+  assert.ok(existsSync(CHROME), `Chrome not found at ${CHROME}; set CHROME_PATH`)
+  const requests = []
+  const server = http.createServer((request, response) => {
+    const url = new URL(request.url, 'http://test')
+    requests.push(url.pathname)
+    if (url.pathname === '/frame') {
+      const stored = validateDesignArtifactHtml(`<!doctype html><html><head><style>html,body{margin:0;height:100%}
+section{height:800px}.a{background:#ff0066}.b{background:#00cc66}.c{height:400px;background:#3366ff}
+.leak{background:url(http://127.0.0.1:${server.address().port}/leak.png)}</style></head><body>
+<section class="a"><h1 class="leak" style="color:#fff;margin:0;padding:40px">fx0</h1></section><section class="b"></section><section class="c"></section></body></html>`)
+      assert.equal(stored.ok, true, stored.error)
+      const token = 'browser-test'
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': DESIGN_FRAME_CSP })
+      response.end(designFrameHtml(prepareDesignArtifactHtml(stored.html, DESIGN_ARTIFACT_EMBEDDED_CSP, token, designCaptureScript(token)), token, [], undefined, { relay: DESIGN_CAPTURE_RELAY }))
+    } else if (url.pathname === '/hold') {
+      setTimeout(() => response.writeHead(404).end(), 6000)
+    } else if (url.pathname === '/') {
+      response.writeHead(200, { 'content-type': 'text/html' }).end(`<!doctype html><html><head><title>app</title></head><body style="margin:0">
+<main style="position:fixed;inset:0;background:#fff"><pre id="out">{}</pre></main>
+<div style="position:fixed;inset:0;z-index:-10;overflow:hidden;opacity:0;pointer-events:none"><iframe id="capture" src="/frame" style="width:1280px;height:800px;border:0"></iframe></div>
+<script>
+const frame = document.getElementById('capture')
+const out = {}
+const show = () => { document.getElementById('out').textContent = JSON.stringify(out) }
+const describe = async (blob) => {
+  const bitmap = await createImageBitmap(blob)
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+  const context = canvas.getContext('2d')
+  context.drawImage(bitmap, 0, 0)
+  return { type: blob.type, width: bitmap.width, height: bitmap.height, color: [...context.getImageData(1200, bitmap.height - 20, 1, 1).data.slice(0, 3)] }
+}
+addEventListener('message', async ({ data, source }) => {
+  if (source !== frame.contentWindow) return
+  if (data?.type === 'fx0-artifact-painted' && !out.asked) {
+    out.asked = true
+    frame.contentWindow.postMessage({ type: 'fx0-capture', cid: 'viewport' }, location.origin)
+  }
+  if (data?.type !== 'fx0-artifact-captured') return
+  out[data.cid] = { height: data.height, truncated: data.truncated, timing: data.timing, images: await Promise.all(data.blobs.map(describe)) }
+  if (data.cid === 'viewport') frame.contentWindow.postMessage({ type: 'fx0-capture', cid: 'page', full: true }, location.origin)
+  show()
+})
+</script><img alt="" src="/hold"></body></html>`)
+    } else {
+      response.writeHead(404).end()
+    }
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const dir = await mkdtemp(join(tmpdir(), 'fx0-design-capture-'))
+  try {
+    const { stdout } = await promisify(execFile)(CHROME, [
+      '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--window-size=390,844',
+      `--user-data-dir=${join(dir, 'profile')}`, '--dump-dom', `http://127.0.0.1:${server.address().port}/`,
+    ], { timeout: 60_000, maxBuffer: 16 * 1024 * 1024 })
+    const out = JSON.parse(stdout.match(/<pre id="out">([^<]*)<\/pre>/)[1])
+    const near = (rgb, target) => rgb.every((value, i) => Math.abs(value - target[i]) < 24)
+    assert.equal(out.viewport.images.length, 1)
+    assert.deepEqual(out.viewport.images.map(({ type, width, height }) => [type, width, height]), [['image/webp', 1280, 800]], 'Chrome sends WebP')
+    assert.ok(near(out.viewport.images[0].color, [255, 0, 102]), `the viewport is the design's first section, got ${out.viewport.images[0].color}`)
+    for (const part of ['fontsMs', 'libraryMs', 'encodeMs']) assert.ok(out.viewport.timing?.[part] >= 0, `the frame reports ${part}`)
+    assert.equal(out.page.height, 2000)
+    assert.equal(out.page.truncated, false)
+    assert.deepEqual(out.page.images.map(({ width, height }) => [width, height]), [[1280, 800], [1280, 800], [1280, 400]])
+    const colors = [[255, 0, 102], [0, 204, 102], [51, 102, 255]]
+    out.page.images.forEach((image, i) => assert.ok(near(image.color, colors[i]), `tile ${i + 1} shows section ${i + 1}, got ${image.color}`))
+    assert.ok(!requests.includes('/leak.png'), 'the url() the design names never reached the network')
+  } finally {
+    server.closeAllConnections()
+    server.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+// screenshot_design on a live preview, driven as the app drives it: a compatible hot update is
+// photographed in place; the design is then frozen so the frame restores it under a fresh token
+// and it is photographed again; an update the frame refuses makes the app reload the frame, with
+// a fresh token, and it is photographed once more. Each photo must show the design it came from,
+// under the wrapper's production policy and the design's embedded CSP, with no network request.
+test('in Chrome, a live preview photographs its design after a hot update, a restore and a reload', async () => {
+  assert.ok(existsSync(CHROME), `Chrome not found at ${CHROME}; set CHROME_PATH`)
+  const session = 'capture-session'
+  const requests = []
+  let origin = ''
+  // Freezes the design's own thread on request, as a stalled design would be.
+  const FREEZE = `<script>addEventListener('message',event=>{if(event.data==='fx0-test-freeze'){const end=Date.now()+4500;while(Date.now()<end);}});</script>`
+  const page = (color, tag = 'section') => `<!doctype html><html><head><title>capture</title><style>html,body{margin:0;height:100%}
+${tag}{height:800px}.a{background:${color};background-image:url(${origin}/leak.png)}</style></head><body><${tag} class="a"></${tag}>${FREEZE}</body></html>`
+  const source = (revision) => revision === 1 ? page('#ff0066') : revision === 2 ? page('#0066ff') : page('#00cc66', 'main')
+  // The same shape the route returns as JSON, and what it hands the wrapper.
+  const payload = (revision) => {
+    const validation = validateDesignArtifactHtml(source(revision))
+    assert.equal(validation.ok, true, validation.error)
+    return { protocol: 1, sessionId: session, revision, sourceHtml: validation.html, renderHtml: validation.html, images: [] }
+  }
+  // The app: a fixed, invisible preview in a phone-sized window. It waits for each paint, asks for
+  // photos, and sends the updates the way PreviewPane does. The hold keeps the load (and the dump)
+  // open until the flow is done.
+  const harness = `<!doctype html><html><head><title>app</title></head><body><pre id="out">{}</pre>
+<div style="position:fixed;inset:0;z-index:-10;overflow:hidden;opacity:0;pointer-events:none"><iframe id="capture" style="width:1280px;height:800px;border:0"></iframe></div>
+<script>
+const out = { shots: {} }
+const frame = document.getElementById('capture')
+const show = () => { document.getElementById('out').textContent = JSON.stringify(out) }
+const waiting = []
+const next = (test) => new Promise((resolve) => waiting.push({ test, resolve }))
+addEventListener('message', ({ data, source }) => {
+  if (source !== frame.contentWindow || !data) return
+  const at = waiting.findIndex((waiter) => waiter.test(data))
+  if (at >= 0) waiting.splice(at, 1)[0].resolve(data)
+})
+const describe = async (blob) => {
+  const bitmap = await createImageBitmap(blob)
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+  const context = canvas.getContext('2d')
+  context.drawImage(bitmap, 0, 0)
+  return { type: blob.type, width: bitmap.width, height: bitmap.height, color: [...context.getImageData(1200, bitmap.height - 20, 1, 1).data.slice(0, 3)] }
+}
+const bounded = (promise, what) => Promise.race([promise, new Promise((resolve, reject) => setTimeout(() => reject(new Error(what + ' did not answer in time')), 8000))])
+const painted = () => next((data) => data.type === 'fx0-artifact-painted' && data.updateReady === true)
+const open = (revision) => {
+  const arrived = painted()
+  frame.src = '/frame?rev=' + revision + '&n=' + crypto.randomUUID()
+  return bounded(arrived, 'the preview painting')
+}
+const shot = async (name) => {
+  const reply = next((data) => data.type === 'fx0-artifact-captured' && data.cid === name)
+  frame.contentWindow.postMessage({ type: 'fx0-capture', cid: name, full: false }, location.origin)
+  const data = await bounded(reply, 'the capture')
+  out.shots[name] = { error: data.error ?? null, images: await Promise.all(data.blobs.map(describe)) }
+  show()
+}
+const update = async (documentId, baseRevision, revision) => {
+  const body = await (await fetch('/payload?rev=' + revision)).json()
+  const requestId = crypto.randomUUID()
+  const result = next((data) => data.type === 'fx0-preview-result' && data.requestId === requestId)
+  frame.contentWindow.postMessage({ type: 'fx0-preview-update', protocol: 1, requestId, documentId, baseRevision, payload: body }, location.origin)
+  const data = await bounded(result, 'the update')
+  return { status: data.status, reason: data.reason ?? null }
+}
+const run = async () => {
+  const first = await open(1)
+  await shot('pink')
+  out.compatible = await update(first.documentId, 1, 2)
+  await shot('blue')
+  const restored = Promise.race([painted(), new Promise((_, reject) => setTimeout(() => reject(new Error('the frame did not restore a stalled design')), 9000))])
+  frame.contentDocument.querySelector('#frame-root iframe').contentWindow.postMessage('fx0-test-freeze', '*')
+  const again = await restored
+  out.restored = again.documentId !== first.documentId
+  await shot('restored')
+  out.refused = await update(again.documentId, 2, 3)
+  const reopened = await open(3)
+  out.reopened = reopened.documentId !== again.documentId
+  await shot('reloaded')
+}
+run().then(() => { out.done = true }, (error) => { out.error = String(error && error.message || error) }).then(() => {
+  show()
+  return fetch('/done')
+})
+</script><img alt="" src="/hold"></body></html>`
+  const holds = []
+  const server = http.createServer((request, response) => {
+    const url = new URL(request.url, 'http://test')
+    requests.push(url.pathname)
+    if (url.pathname === '/frame') {
+      const preview = payload(Number(url.searchParams.get('rev')))
+      // Each response is a new wrapper with its own token, as the route issues.
+      const token = crypto.randomUUID()
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': designFrameCsp(`${origin}/api/artifact-image`) })
+      return response.end(designFrameHtml(prepareDesignArtifactHtml(preview.renderHtml, DESIGN_ARTIFACT_EMBEDDED_CSP, token), token, [], preview, { relay: DESIGN_CAPTURE_RELAY, script: designCaptureScript }))
+    }
+    if (url.pathname === '/payload') {
+      return response.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'private, no-store' }).end(JSON.stringify(payload(Number(url.searchParams.get('rev')))))
+    }
+    if (url.pathname === '/hold') {
+      holds.push(response)
+      setTimeout(() => { if (!response.writableEnded) response.writeHead(404).end() }, 60_000).unref()
+      return
+    }
+    if (url.pathname === '/done') {
+      for (const held of holds.splice(0)) if (!held.writableEnded) held.writeHead(404).end()
+      return response.writeHead(204).end()
+    }
+    if (url.pathname === '/') return response.writeHead(200, { 'content-type': 'text/html' }).end(harness)
+    response.writeHead(404).end()
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  origin = `http://127.0.0.1:${server.address().port}`
+  const dir = await mkdtemp(join(tmpdir(), 'fx0-design-live-'))
+  try {
+    const { stdout } = await promisify(execFile)(CHROME, [
+      '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--window-size=390,844',
+      `--user-data-dir=${join(dir, 'profile')}`, '--dump-dom', `${origin}/`,
+    ], { timeout: 90_000, killSignal: 'SIGKILL', maxBuffer: 16 * 1024 * 1024 })
+    const out = JSON.parse(stdout.match(/<pre id="out">([^<]*)<\/pre>/)[1])
+    assert.equal(out.error, undefined, out.error)
+    assert.equal(out.done, true, 'the flow finished')
+    assert.equal(out.compatible.status, 'applied', 'a compatible update applies in place')
+    assert.equal(out.restored, true, 'a stalled design is restored under a new document token')
+    assert.equal(out.refused.status, 'reload', 'an incompatible update is refused, not applied')
+    assert.equal(out.reopened, true, 'the reloaded frame has a new document token')
+    const near = (rgb, target) => rgb.every((value, i) => Math.abs(value - target[i]) < 24)
+    const expected = { pink: [255, 0, 102], blue: [0, 102, 255], restored: [0, 102, 255], reloaded: [0, 204, 102] }
+    for (const [name, color] of Object.entries(expected)) {
+      const shot = out.shots[name]
+      assert.equal(shot.error, null, `${name}: no capture failure`)
+      assert.deepEqual(shot.images.map(({ type, width, height }) => [type, width, height]), [['image/webp', 1280, 800]], `${name}: one WebP viewport`)
+      assert.ok(near(shot.images[0].color, color), `${name} shows ${color}, got ${shot.images[0].color}`)
+    }
+    assert.ok(!requests.includes('/leak.png'), 'the url() the design names never reached the network')
   } finally {
     server.closeAllConnections()
     server.close()

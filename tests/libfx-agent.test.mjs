@@ -88,6 +88,12 @@ test('CLIProxyAPI transport sends pinned GPT effort and budgets OpenAI messages'
   assert.equal(network.mock.callCount(), 2)
 })
 
+test('screenshots in one response take turns: a chat has one capture open at a time', () => {
+  const screenshot = agentOptions.tools.find((tool) => tool.name === 'screenshot_design')
+  assert.equal(screenshot.idempotent, true)
+  assert.equal(screenshot.writes, true, 'a tool that writes never runs beside another call')
+})
+
 test('a recovered sponsored chat uses its recorded trial funding instead of requiring a customer card', async (t) => {
   const previous = { key: process.env.AI_GATEWAY_API_KEY, enabled: process.env.FX0_FREE_PROMPTS }
   process.env.AI_GATEWAY_API_KEY = 'synthetic-server-key'

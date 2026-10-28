@@ -4,6 +4,8 @@ import { Redis } from '@upstash/redis'
 // @ts-expect-error Node's strip-types integration test requires the source extension.
 import { assetReference, rewriteRemoteImages, validateDesignArtifactHtml } from './design-artifact.ts'
 // @ts-expect-error Node's strip-types integration test requires the source extension.
+import { CAPTURE_ACK_MS, CAPTURE_WAIT_MS, type CaptureFailure, type ShotTiming } from './capture-protocol.ts'
+// @ts-expect-error Node's strip-types integration test requires the source extension.
 import { type DesignMdInput } from './design-md.ts'
 // @ts-expect-error Node's strip-types integration test requires the source extension.
 import { type SessionInfo, type SessionView, type StreamItem } from './events.ts'
@@ -16,14 +18,38 @@ const PREFIX = process.env.FX0_REDIS_PREFIX?.trim() || 'fx0:v1'
 
 let client: Redis | null = null
 
+function redisConfig(): { url: string; token: string } {
+  const url = process.env.KV_REST_API_URL
+  const token = process.env.KV_REST_API_TOKEN
+  if (!url || !token) throw new Error('Redis journal is not configured (KV_REST_API_URL/KV_REST_API_TOKEN)')
+  return { url, token }
+}
+
 export function redis(): Redis {
-  if (!client) {
-    const url = process.env.KV_REST_API_URL
-    const token = process.env.KV_REST_API_TOKEN
-    if (!url || !token) throw new Error('Redis journal is not configured (KV_REST_API_URL/KV_REST_API_TOKEN)')
-    client = new Redis({ url, token })
-  }
+  if (!client) client = new Redis(redisConfig())
   return client
+}
+
+// BLPOP over Upstash's REST API, which the client library does not expose: one request
+// blocks in Redis for up to `seconds` and returns as soon as a value is pushed. Aborting
+// ends the request; the caller withdraws whatever it was waiting for (see awaitCapture).
+// A request that outlives its block by much has stalled, and fails like any other error.
+async function blockingPop(listKey: string, seconds: number, signal: AbortSignal): Promise<string | null> {
+  const { url, token } = redisConfig()
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(['BLPOP', listKey, String(seconds)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout((seconds + 5) * 1000)]),
+    })
+    if (!response.ok) throw new Error(`Redis BLPOP failed with ${response.status}`)
+    const { result } = await response.json() as { result: [string, string] | null }
+    return result?.[1] ?? null
+  } catch (error) {
+    if (signal.aborted) return null
+    throw error
+  }
 }
 
 // Events committed by this process, announced the moment Redis confirms them. A
@@ -315,11 +341,13 @@ export const readTranscript = createTranscriptReader({
     const values: Record<string, string> = {}
     for (let i = 0; i < fields.length; i += 2) values[fields[i]] = fields[i + 1]
     const stored = parseStoredSession(id, values)
+    const view = sessionView(values)
     return {
       previous: previous ? parseJson<TranscriptSnapshot>(previous) : null,
       events: tail.map((item) => parseJson<StreamItem>(item)),
-      view: sessionView(values),
-      summary: stored ? { id, title: stored.title, createdAt: stored.createdAt, lastActivity: stored.lastActivity, busy: busy > 0, ...(stored.trialChat ? { trialChat: true as const } : {}) } : null,
+      view,
+      summary: stored ? { id, title: stored.title, createdAt: stored.createdAt, lastActivity: stored.lastActivity, busy: busy > 0, ...(stored.trialChat ? { trialChat: true as const } : {}),
+        ...(Number.isSafeInteger(view.artifactRevision) && view.artifactRevision > 0 ? { artifactRevision: view.artifactRevision } : {}) } : null,
     }
   },
   publish: publishTranscriptSnapshot,
@@ -425,6 +453,9 @@ const SESSION_PARTS = [
   'active',
   'active-question',
   'answer',
+  'capture',
+  'capture-replies',
+  'preview-waits',
   'design-artifact',
   'design-md',
   'event-seq',
@@ -499,19 +530,22 @@ export async function readSessionSummaries(ids: string[]): Promise<SessionInfo[]
     const batch = ids.slice(offset, offset + 200)
     const pipeline = redis().pipeline()
     for (const id of batch) {
-      pipeline.hmget(key(id, 'state'), 'id', 'createdAt', 'lastActivity', 'title', 'trialChat', 'preferredModel', 'preferredEffort', 'preferredFast')
+      pipeline.hmget(key(id, 'state'), 'id', 'createdAt', 'lastActivity', 'title', 'trialChat', 'preferredModel', 'preferredEffort', 'preferredFast', 'artifactRevision')
       pipeline.exists(key(id, 'active'))
       pipeline.get(key(id, 'message-seq'))
     }
     const values = await pipeline.exec()
     for (let index = 0; index < batch.length; index++) {
       if (Number(values[index * 3 + 2] ?? 0) < 1) continue
-      const state = parseStoredSession(batch[index], values[index * 3] as Record<string, unknown> | null)
+      const fields = values[index * 3] as Record<string, unknown> | null
+      const state = parseStoredSession(batch[index], fields)
       if (!state) continue
+      const { artifactRevision } = sessionView(fields)
       sessions.push({ id: state.id, title: state.title, createdAt: state.createdAt,
         lastActivity: state.lastActivity, busy: Number(values[index * 3 + 1] ?? 0) > 0,
         ...(state.trialChat ? { trialChat: true as const } : {}),
-        generation: { model: state.preferredModel ?? '', effort: state.preferredEffort ?? '', fast: state.preferredFast ?? false } })
+        generation: { model: state.preferredModel ?? '', effort: state.preferredEffort ?? '', fast: state.preferredFast ?? false },
+        ...(Number.isSafeInteger(artifactRevision) && artifactRevision > 0 ? { artifactRevision } : {}) })
     }
   }
   return sessions.sort((a, b) => b.lastActivity - a.lastActivity).slice(0, 100)
@@ -825,6 +859,152 @@ return 1
 `
 export async function clearActiveQuestion(sessionId: string, qid: number): Promise<boolean> {
   return (await redis().eval<unknown[], number>(CLEAR_QUESTION, [key(sessionId, 'active-question')], [String(qid)])) === 1
+}
+
+export interface CaptureShot {
+  // The viewport, or a full page's viewport-high tiles from the top.
+  images: { mimeType: string; data: string }[]
+  width?: number
+  height?: number
+  // A full page taller than the tiles cover.
+  truncated?: boolean
+  // The tab's and /api/capture's part of the capture's trace (lib/capture-protocol.ts).
+  timing?: ShotTiming
+}
+
+// The Redis side of the screenshot protocol (lib/capture-protocol.ts). The tool call opens a
+// capture and blocks on the chat's reply list; /api/capture pushes the tab's acknowledgement,
+// then its photo or failure, so the call wakes the moment each arrives, on whichever instance
+// runs the turn. No polling. A key whose format changes gets a new name, so instances of two
+// deploys never misread it.
+
+/** What a tab answered for a capture it acknowledged. */
+export type CaptureAnswer = { kind: 'shot'; shot: CaptureShot } | { kind: 'failed'; reason: CaptureFailure }
+
+/** How a capture ended for the waiting call. */
+export type CaptureOutcome =
+  | CaptureAnswer
+  | { kind: 'unanswered' } // no tab acknowledged it within the ack window
+  | { kind: 'timeout' } // a tab acknowledged it, then sent nothing in time
+  | { kind: 'cancelled' }
+
+const OPEN_CAPTURE = `
+if redis.call('EXISTS', KEYS[3]) == 1 then return 0 end
+redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+redis.call('DEL', KEYS[2])
+return 1
+`
+export async function openCapture(sessionId: string, cid: string): Promise<void> {
+  const set = await redis().eval<unknown[], number>(OPEN_CAPTURE,
+    [key(sessionId, 'capture'), key(sessionId, 'capture-replies'), key(sessionId, 'deleting')],
+    [cid, String(CAPTURE_ACK_MS + CAPTURE_WAIT_MS)])
+  if (!set) throw new SessionCleanupError()
+}
+
+// A reply counts only for the capture still open. An acknowledgement leaves it open for the
+// whole wait it starts; a photo or a failure closes it, so the first answer is the only one.
+const REPLY_CAPTURE = `
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+if ARGV[4] == '1' then redis.call('DEL', KEYS[1]) else redis.call('PEXPIRE', KEYS[1], ARGV[3]) end
+redis.call('RPUSH', KEYS[2], ARGV[2])
+redis.call('PEXPIRE', KEYS[2], ARGV[3])
+return 1
+`
+async function replyCapture(sessionId: string, cid: string, reply: { kind: 'ack' } | CaptureAnswer): Promise<boolean> {
+  return (await redis().eval<unknown[], number>(REPLY_CAPTURE,
+    [key(sessionId, 'capture'), key(sessionId, 'capture-replies')],
+    [cid, JSON.stringify({ cid, ...reply }), String(CAPTURE_ACK_MS + CAPTURE_WAIT_MS), reply.kind === 'ack' ? '0' : '1'])) === 1
+}
+
+/** A tab took the request; false when the capture is no longer open (a replayed event). */
+export const acknowledgeCapture = (sessionId: string, cid: string) => replyCapture(sessionId, cid, { kind: 'ack' })
+/** The tab's photo or failure; false when the capture is no longer open or already answered. */
+export const answerCapture = (sessionId: string, cid: string, answer: CaptureAnswer) => replyCapture(sessionId, cid, answer)
+
+// Upstash ends long requests on its own terms; waiting in slices keeps each one short. A
+// slice that fails is retried while the wait has time left, so one bad request does not
+// refuse a photo already on its way.
+const CAPTURE_BLOCK_SECONDS = 10
+const CAPTURE_POP_ATTEMPTS = 3
+
+function replyFor(value: unknown, cid: string): { kind: 'ack' } | CaptureAnswer | null {
+  const stored = parseJson<{ cid?: string; kind?: string; shot?: CaptureShot; reason?: CaptureFailure }>(value)
+  if (stored?.cid !== cid) return null
+  if (stored.kind === 'ack') return { kind: 'ack' }
+  if (stored.kind === 'failed' && stored.reason) return { kind: 'failed', reason: stored.reason }
+  return stored.kind === 'shot' && stored.shot ? { kind: 'shot', shot: stored.shot } : null
+}
+
+/**
+ * Waits for the open capture: first for a tab to acknowledge it within `ackMs`, then for
+ * its photo or failure within CAPTURE_WAIT_MS. However it ends, the capture is withdrawn,
+ * so a reply sent afterwards is refused instead of left behind.
+ */
+export async function awaitCapture(sessionId: string, cid: string, signal: AbortSignal, ackMs = CAPTURE_ACK_MS): Promise<CaptureOutcome> {
+  const replies = key(sessionId, 'capture-replies')
+  let acknowledged = false
+  let deadline = Date.now() + ackMs
+  let failures = 0
+  try {
+    for (let left = ackMs; left > 0 && !signal.aborted; left = deadline - Date.now()) {
+      let value: string | null
+      try {
+        value = await blockingPop(replies, Math.min(CAPTURE_BLOCK_SECONDS, Math.ceil(left / 1000)), signal)
+        failures = 0
+      } catch (error) {
+        if (++failures >= CAPTURE_POP_ATTEMPTS) throw error
+        continue
+      }
+      const reply = value == null ? null : replyFor(value, cid)
+      if (reply?.kind === 'ack') {
+        if (!acknowledged) deadline = Date.now() + CAPTURE_WAIT_MS
+        acknowledged = true
+      } else if (reply) return reply
+    }
+  } catch (error) {
+    await closeCapture(sessionId, cid).catch(() => {})
+    throw error
+  }
+  // An answer accepted just before the capture closed is already in the list.
+  if (!await closeCapture(sessionId, cid)) {
+    for (let late = await redis().lpop<unknown>(replies); late != null; late = await redis().lpop<unknown>(replies)) {
+      const reply = replyFor(late, cid)
+      if (reply && reply.kind !== 'ack') return reply
+    }
+  }
+  if (signal.aborted) return { kind: 'cancelled' }
+  return { kind: acknowledged ? 'timeout' : 'unanswered' }
+}
+
+// How long a screenshot call waited for the preview, by the model's id for the call. The
+// call records it before it returns, so it is there when the projector writes the call's
+// tool_end; the transcript leaves that wait out of the call's time.
+const PREVIEW_WAITS_TTL_MS = 86_400_000
+
+export async function recordPreviewWait(sessionId: string, toolCallId: string, ms: number): Promise<void> {
+  const waits = key(sessionId, 'preview-waits')
+  await redis().pipeline().hset(waits, { [toolCallId]: Math.round(ms) }).pexpire(waits, PREVIEW_WAITS_TTL_MS).exec()
+}
+
+export async function readPreviewWaits(sessionId: string, toolCallIds: string[]): Promise<Map<string, number>> {
+  if (!toolCallIds.length) return new Map()
+  const values = await redis().hmget<Record<string, unknown>>(key(sessionId, 'preview-waits'), ...toolCallIds)
+  const waits = new Map<string, number>()
+  for (const id of toolCallIds) {
+    const ms = Number(values?.[id])
+    if (Number.isFinite(ms) && ms > 0) waits.set(id, ms)
+  }
+  return waits
+}
+
+// Withdraws the capture when its tool call stops waiting; true if it was still open.
+const CLOSE_CAPTURE = `
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+redis.call('DEL', KEYS[1])
+return 1
+`
+export async function closeCapture(sessionId: string, cid: string): Promise<boolean> {
+  return (await redis().eval<unknown[], number>(CLOSE_CAPTURE, [key(sessionId, 'capture')], [cid])) === 1
 }
 
 // The first libfx session id stored for a chat wins, so two first prompts racing

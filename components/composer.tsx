@@ -1038,7 +1038,10 @@ export default function Composer({
                       type="button"
                       role="option"
                       aria-selected={resolvedModel === candidate}
-                      {...fastClick(() => void chooseModel(candidate))}
+                      {...fastClick(() => {
+                        setModelPickerOpen(false)
+                        void chooseModel(candidate)
+                      })}
                       className={`flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-sm outline-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground ${model === candidate ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
                     >
                       <span className="min-w-0 flex-1 truncate">{candidate.split('/').at(-1) ?? candidate}</span>

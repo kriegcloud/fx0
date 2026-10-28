@@ -176,8 +176,10 @@ async function chatOfRequest(sessionId: string | null): Promise<string | null> {
 // Reads are safe to run twice after a crash; publishing the same document twice
 // is too. Edits, questions and subagents are not, so libfx tells the model a
 // call cut off by a crash may have run instead of running it again.
-const IDEMPOTENT = new Set(['read_design', 'publish_design', 'web_fetch', 'read_tool_result', 'capability_search', 'list_reference_roots', 'list_reference_files', 'read_reference_file', 'search_reference_files'])
-const WRITES = new Set(['publish_design', 'edit_design'])
+const IDEMPOTENT = new Set(['read_design', 'publish_design', 'screenshot_design', 'web_fetch', 'read_tool_result', 'capability_search', 'list_reference_roots', 'list_reference_files', 'read_reference_file', 'search_reference_files'])
+// A tool that writes never runs beside another call. A chat has one capture open at a time
+// (lib/journal.ts), so two screenshots in one response must take turns too.
+const WRITES = new Set(['publish_design', 'edit_design', 'screenshot_design'])
 
 function turnContext(ctx: FxToolContext): TurnContext {
   const context = ctx.context as Partial<TurnContext> | undefined

@@ -150,6 +150,8 @@ export interface ChatEntry {
   content?: string
   startedAt?: number
   durationMs?: number
+  // Part of a tool call spent waiting for the preview, left out of durationMs.
+  previewWaitMs?: number
   artifactRevision?: number
   qid?: number
   questions?: { question: string; options: { label: string; description?: string }[] }[]

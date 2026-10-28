@@ -270,7 +270,10 @@ export function applyStreamItem(entries: ChatEntry[], item: StreamItem): ChatEnt
         ...entry,
         toolStatus: item.isError ? 'error' : 'done',
         content: item.content,
-        durationMs: entry.startedAt != null && item.at != null ? item.at - entry.startedAt : undefined,
+        previewWaitMs: item.previewWaitMs,
+        durationMs: entry.startedAt != null && item.at != null
+          ? Math.max(0, item.at - entry.startedAt - (item.previewWaitMs ?? 0))
+          : undefined,
       }
       return next
     }

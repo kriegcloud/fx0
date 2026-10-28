@@ -6,6 +6,7 @@ import {
   projectEvents,
   projectedCursor,
   readEvents,
+  readPreviewWaits,
   readSession,
   readTurnWork,
   type TurnSettings,
@@ -78,7 +79,7 @@ export function itemsOf(line: FxStreamLine, at: number): Entry[] {
     case 'tool_start':
       return [{ type: 'tool_start', name: line.name || 'tool', command: toolLabel(line as Record<string, unknown>), turnId: id, at }]
     case 'tool_end':
-      return [{ type: 'tool_end', name: line.name || 'tool', isError: line.isError === true, content: typeof line.content === 'string' ? tail(line.content) : undefined, turnId: id, at }]
+      return [{ type: 'tool_end', name: line.name || 'tool', isError: line.isError === true, content: typeof line.content === 'string' ? tail(line.content) : undefined, toolCallId: line.id, turnId: id, at }]
     case 'turn_end': {
       const failed = line.stopReason === 'error' || line.stopReason === 'unknown' || (line.stopReason === 'refused' && line.error?.message)
       return [failed
@@ -205,6 +206,17 @@ export interface FollowOptions {
   idleMs: number
 }
 
+// The preview wait a screenshot call recorded (lib/journal.ts), onto its tool_end.
+export async function addPreviewWaits(sessionId: string, entries: Entry[]): Promise<void> {
+  const ends = entries.filter((entry) => entry.type === 'tool_end' && entry.toolCallId && entry.name === 'screenshot_design')
+  if (!ends.length) return
+  const waits = await readPreviewWaits(sessionId, ends.map((entry) => entry.toolCallId!))
+  for (const entry of ends) {
+    const ms = waits.get(entry.toolCallId!)
+    if (ms) entry.previewWaitMs = ms
+  }
+}
+
 // Follows the chat's libfx stream from the projected cursor. Returns when the
 // chat stays idle for idleMs, when the signal aborts, or when another projector
 // moved the cursor first (that one carries on).
@@ -241,6 +253,7 @@ export async function project(agent: FxAgent, host: SessionState, libfxSessionId
       const id = line.type === 'turn_start' ? messageIdOf(line) : null
       if (id != null && line.type === 'turn_start') starts[id] = await readTurnStart(host, id, line.input)
     }
+    await addPreviewWaits(host.id, entries)
     const items = await projectEvents(host.id, cursor, toCursor, entries, starts)
     if (!items) return false
     cursor = toCursor

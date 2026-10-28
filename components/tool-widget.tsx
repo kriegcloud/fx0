@@ -25,6 +25,7 @@ const TOOL_WIDGETS: Record<string, ToolWidgetConfig> = {
   read_design: { label: 'read design', icon: IconFileText },
   publish_design: { label: 'publish design', icon: IconPencilEdit },
   edit_design: { label: 'edit design', icon: IconPencilEdit },
+  screenshot_design: { label: 'screenshot', icon: IconFileText },
   web_fetch: { label: 'fetch url', icon: IconGlobe },
   web_search: { label: 'web search', icon: IconGlobe },
   ask_user_question: { label: 'ask a question', icon: IconQuestion },
@@ -43,6 +44,7 @@ const TOOL_ACTIVITY: Record<string, { group: string; one: string; many: string }
   publish_design: { group: 'edits', one: 'published a design', many: 'published designs' },
   edit_design: { group: 'edits', one: 'edited a design', many: 'edited designs' },
   read_design: { group: 'reads', one: 'read a design', many: 'read designs' },
+  screenshot_design: { group: 'reads', one: 'checked the design', many: 'checked the design' },
   web_fetch: { group: 'web', one: 'used the web', many: 'used the web' },
   web_search: { group: 'web', one: 'searched the web', many: 'searched the web' },
   ask_user_question: { group: 'questions', one: 'asked for input', many: 'asked for input' },
@@ -91,6 +93,7 @@ function ToolWidget({
   status,
   content,
   durationMs,
+  previewWaitMs,
   callId,
 }: {
   name: string
@@ -98,6 +101,7 @@ function ToolWidget({
   status: 'running' | 'done' | 'error'
   content?: string
   durationMs?: number
+  previewWaitMs?: number
   callId?: number
 }) {
   const [open, setOpen] = useState(false)
@@ -117,7 +121,7 @@ function ToolWidget({
       {command && <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground-tertiary">{command}</code>}
       <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
         {callId != null && <span title="Tool call ID">#{callId}</span>}
-        {duration && <span>{duration}</span>}
+        {duration && <span title={previewWaitMs ? `plus ${formatDuration(previewWaitMs)} waiting for the preview to load` : undefined}>{duration}</span>}
         <span role="status" className={`font-medium ${state.className}`}>
           {state.label}
         </span>
@@ -248,6 +252,7 @@ export function ActivityGroup({
                 status={entry.toolStatus ?? 'done'}
                 content={entry.content}
                 durationMs={entry.durationMs}
+                previewWaitMs={entry.previewWaitMs}
                 callId={entry.callId}
               />
             )

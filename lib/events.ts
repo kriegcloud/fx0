@@ -19,6 +19,7 @@ export interface StreamItem {
     | 'heartbeat'
     | 'question'
     | 'question_resolved'
+    | 'capture'
     | 'reasoning'
     | 'done'
     | 'error'
@@ -55,6 +56,14 @@ export interface StreamItem {
   stopReason?: string
   artifactRevision?: number
   qid?: number
+  /** screenshot_design's request id; an open tab answers it through /api/capture. */
+  cid?: string
+  /** A capture of the whole page in viewport-high tiles, not just the visible viewport. */
+  captureFull?: true
+  /** The model's id for a tool call, on its tool_end. */
+  toolCallId?: string
+  /** On a screenshot call's tool_end: time it spent waiting for the preview, not its own work. */
+  previewWaitMs?: number
   instance?: string
   /** Count only — image bytes are never broadcast over the chat stream. */
   imageCount?: number
@@ -76,6 +85,9 @@ export interface SessionInfo {
   busy: boolean
   // The chat's stored picker settings, so switching to it needs no settings request.
   generation?: { model: string; effort: string; fast: boolean }
+  // The latest published design revision, when there is one, so opening the chat can
+  // start loading its preview while the transcript is still on its way.
+  artifactRevision?: number
 }
 
 export interface SessionPage {
