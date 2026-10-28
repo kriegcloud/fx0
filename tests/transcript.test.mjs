@@ -33,6 +33,21 @@ test('restarting a turn clears its old entries even across a checkpoint', () => 
   assert.deepEqual(transcriptState(compactTranscript(tail, view, previous)), replayEvents([...events.slice(0, 5), ...tail], view))
 })
 
+test('an attachment error survives a delayed turn start and cancellation at every checkpoint boundary', () => {
+  const failure = [
+    { type: 'user', id: 1, seq: 1, text: 'Use these images' },
+    { type: 'error', id: 1, turnId: 1, seq: 2, text: 'The attached images could not be stored. Send the message again.' },
+    { type: 'turn_start', id: 1, turnId: 1, seq: 3 },
+    { type: 'done', id: 1, turnId: 1, seq: 4, stopReason: 'cancelled' },
+  ]
+  for (let split = 0; split <= failure.length; split++) {
+    const previous = compactTranscript(failure.slice(0, split), view)
+    const result = compactTranscript(failure.slice(split), view, JSON.parse(JSON.stringify(previous)))
+    assert.deepEqual(result.entries.filter(entry => entry.type === 'error').map(entry => entry.text), [failure[1].text])
+    assert.equal(result.activeTurnId, null)
+  }
+})
+
 test('text deltas preserve mounted message keys and old events cannot duplicate a snapshot', () => {
   const previous = compactTranscript(events.slice(0, 4), view)
   const updated = compactTranscript(events.slice(3, 5), view, previous)

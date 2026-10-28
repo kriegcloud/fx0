@@ -66,6 +66,8 @@ export function designFrameCsp(imageRoute?: string): string {
   ].join('; ')
 }
 
+const DESIGN_ISOLATION_SCRIPT = 'for(const name of ["RTCPeerConnection","webkitRTCPeerConnection","RTCIceGatherer"]){try{Object.defineProperty(globalThis,name,{value:undefined,writable:false,configurable:false})}catch{}}'
+
 export const DESIGN_FRAME_CSP = designFrameCsp()
 // Counted per place an image is written, so a repeated image cannot expand the design past it.
 export const MAX_EMBEDDED_IMAGE_BYTES = 4 * 1024 * 1024
@@ -100,6 +102,9 @@ export function designFrameHtml(preparedArtifact: string, readyToken: string, im
 const design=${serializedArtifact};
 const images=${serializedImages};
 let artifact=null;
+const popouts=new Map();
+const popoutCsp=${JSON.stringify(DESIGN_ARTIFACT_EMBEDDED_CSP)};
+const popoutBootstrap=${JSON.stringify(`<script>${DESIGN_ISOLATION_SCRIPT}</script>`).replace(/</g, '\\u003c')};
 const token=${serializedReadyToken};
 const frame=document.createElement('iframe');
 frame.title='Interactive design artifact';
@@ -113,6 +118,43 @@ const restore=()=>{if(!artifact)return;lastHeartbeat=Date.now();frame.src=artifa
 addEventListener('message',event=>{
   if(event.source!==frame.contentWindow||event.data?.token!==token)return;
   lastHeartbeat=Date.now();
+  const message=event.data;
+  if(message.type==='popout-open'){
+    const reply=(error)=>frame.contentWindow.postMessage({type:'popout-result',token,id:message.id,error},'*');
+    if(typeof message.id!=='string'||typeof message.html!=='string'||message.html.length>524288)return;
+    if(!navigator.userActivation?.isActive){reply('Open the popout from a user click.');return;}
+    if(popouts.has(message.id)){reply('This popout already exists.');return;}
+    const dimension=(value,fallback)=>Number.isFinite(value)?Math.max(200,Math.min(2400,Math.round(value))):fallback;
+    const popup=window.open('about:blank','_blank','popup,width='+dimension(message.width,900)+',height='+dimension(message.height,650));
+    if(!popup){reply('The browser blocked the popout. Allow popups for this app and try again.');return;}
+    const doc=popup.document;
+    doc.title=typeof message.title==='string'?message.title:'Design popout';
+    doc.documentElement.style.cssText='height:100%;margin:0';
+    doc.body.style.cssText='height:100%;margin:0';
+    const child=doc.createElement('iframe');
+    child.title=doc.title;
+    child.style.cssText='display:block;width:100%;height:100%;border:0';
+    child.setAttribute('sandbox','allow-scripts');
+    child.setAttribute('credentialless','');
+    child.referrerPolicy='no-referrer';
+    // The outer window contains only this iframe. Generated content never receives
+    // the app-origin document or an unsandboxed window reference.
+    const html='<!doctype html><meta http-equiv="Content-Security-Policy" content="'+popoutCsp+'">'+popoutBootstrap+message.html.replace(/^\\s*<!doctype[^>]*>/i,'');
+    const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+    child.src=url;
+    doc.body.append(child);
+    popouts.set(message.id,{popup,url});
+    reply(null);
+    return;
+  }
+  if(message.type==='popout-close'||message.type==='popout-focus'){
+    const entry=popouts.get(message.id);
+    if(entry){
+      if(message.type==='popout-focus')entry.popup.focus();
+      else{entry.popup.close();URL.revokeObjectURL(entry.url);popouts.delete(message.id);}
+    }
+    return;
+  }
   if(event.data.type==='ready')readySignals++;
   // The design paints in its own process, after this wrapper's load event; the app
   // swaps a new revision on screen only once it has.
@@ -124,6 +166,7 @@ addEventListener('message',event=>{
     parent.postMessage({type:'fx0-artifact-open',url:event.data.url},location.origin);
   }
 });
+addEventListener('pagehide',()=>{for(const {popup,url} of popouts.values()){popup.close();URL.revokeObjectURL(url)}popouts.clear()});
 frame.addEventListener('load',()=>setTimeout(()=>{
   if(readySignals>consumedSignals){consumedSignals=readySignals;return;}
   restore();
@@ -156,13 +199,14 @@ Promise.all(images.map(image=>load(image.src))).then(loaded=>{
 }
 
 function designArtifactBootstrap(readyToken?: string): string {
-  // The sandbox grants no popups, so a clicked https link asks the app to open it
+  // The wrapper creates isolated popouts on request. External https links ask the app to open them
   // (see app/api/artifact-frame): the app shows the address and opens it only on the
   // user's own click there, instead of the design navigating the preview away.
   const heartbeat = readyToken
     ? `const token=${JSON.stringify(readyToken)};const send=type=>parent.postMessage({type,token},"*");send("heartbeat");setInterval(()=>send("heartbeat"),500);addEventListener("load",()=>{send("ready");requestAnimationFrame(()=>requestAnimationFrame(()=>send("painted")))},{once:true});addEventListener("click",event=>{const link=event.target instanceof Element&&event.target.closest("a[href]");const url=link?link.getAttribute("href")||"":"";if(/^https:/i.test(url)){event.preventDefault();parent.postMessage({type:"open",token,url},"*")}},true);`
     : ''
-  return `<script>(()=>{for(const name of ["RTCPeerConnection","webkitRTCPeerConnection","RTCIceGatherer"]){try{Object.defineProperty(globalThis,name,{value:undefined,writable:false,configurable:false})}catch{}}${heartbeat}})()</script>`
+  const popoutApi = readyToken ? `let sequence=0;const pending=new Map();addEventListener("message",event=>{if(event.source!==parent||event.data?.token!==token||event.data.type!=="popout-result")return;const request=pending.get(event.data.id);if(!request)return;pending.delete(event.data.id);clearTimeout(request.timer);if(event.data.error)request.reject(new Error(event.data.error));else request.resolve({close:()=>parent.postMessage({type:"popout-close",token,id:event.data.id},"*"),focus:()=>parent.postMessage({type:"popout-focus",token,id:event.data.id},"*")})});globalThis.beep={openPopout:(html,options={})=>new Promise((resolve,reject)=>{if(typeof html!=="string"||html.length>524288){reject(new Error("Popout HTML must be a string under 512 KiB."));return}const id=String(++sequence);const timer=setTimeout(()=>{pending.delete(id);reject(new Error("The preview did not open the popout."))},10000);pending.set(id,{resolve,reject,timer});parent.postMessage({type:"popout-open",token,id,html,title:options.title,width:options.width,height:options.height},"*")})};` : `globalThis.beep={openPopout:(html,options={})=>new Promise((resolve,reject)=>{if(typeof html!=="string"||html.length>524288){reject(new Error("Popout HTML must be a string under 512 KiB."));return}const dimension=(value,fallback)=>Number.isFinite(value)?Math.max(200,Math.min(2400,Math.round(value))):fallback;const popup=window.open("about:blank","_blank","popup,width="+dimension(options.width,900)+",height="+dimension(options.height,650));if(!popup){reject(new Error("The browser blocked the popout. Allow popups and try again."));return}popup.document.write(html);popup.document.close();if(typeof options.title==="string")popup.document.title=options.title;resolve({focus:()=>popup.focus(),close:()=>popup.close()})})};`
+  return `<script>(()=>{${DESIGN_ISOLATION_SCRIPT}${heartbeat}${popoutApi}})()</script>`
 }
 
 function escapeAttribute(value: string): string {
@@ -213,7 +257,7 @@ interface HtmlTag {
   attributes: Map<string, string>
   valueRanges: Map<string, SourceRange>
   duplicateAttribute: string | null
-  // The raw text of a <style> element.
+  // The raw text of a <script> or <style> element.
   content?: SourceRange
 }
 
@@ -292,7 +336,7 @@ function parseOpeningTags(source: string): HtmlTag[] {
     if (name === 'script' || name === 'style') {
       const closing = normalized.indexOf(`</${name}`, end + 1)
       cursor = closing < 0 ? source.length : closing
-      if (name === 'style') tag.content = { start: end + 1, end: cursor }
+      tag.content = { start: end + 1, end: cursor }
     } else {
       cursor = end + 1
     }
@@ -457,7 +501,7 @@ export function rewriteRemoteImages(html: string, embed: (url: string) => string
         for (const edit of cssUrlEdits(html, lower, inner, true)) { const value = image(edit.url); if (value) edits.push({ ...edit, text: `url(${value})` }) }
       }
     }
-    if (tag.content) {
+    if (tag.name === 'style' && tag.content) {
       for (const edit of cssUrlEdits(html, lower, tag.content, false)) { const value = image(edit.url); if (value) edits.push({ ...edit, text: `url(${value})` }) }
     }
   }
@@ -578,15 +622,22 @@ export function validateDesignArtifactHtml(html: string, { remoteImages = remote
   if (!source.startsWith(DOCTYPE)) {
     return { ok: false, error: `design artifact must start with <!doctype html>, but it starts with ${visibleStart(source)}` }
   }
-  const afterDoctype = source.slice(DOCTYPE.length)
+  // HTML templates inside scripts/styles are raw text, not extra document tags.
+  // In particular, beep.openPopout() can receive a complete popout document.
+  const tags = parseOpeningTags(source)
+  let structure = source
+  for (const tag of [...tags].reverse()) {
+    if (tag.content) structure = structure.slice(0, tag.content.start) + structure.slice(tag.content.end)
+  }
+  const afterDoctype = structure.slice(DOCTYPE.length)
   if (/<(?:!|\?)/.test(afterDoctype)) {
     return { ok: false, error: 'design artifact must not contain markup declarations' }
   }
 
   const requiredTags = ['html', 'head', 'body'] as const
   for (const tag of requiredTags) {
-    const openings = source.match(new RegExp(`<${tag}(?:\\s[^>]*)?>`, 'gi'))?.length ?? 0
-    const closings = source.match(new RegExp(`</${tag}\\s*>`, 'gi'))?.length ?? 0
+    const openings = structure.match(new RegExp(`<${tag}(?:\\s[^>]*)?>`, 'gi'))?.length ?? 0
+    const closings = structure.match(new RegExp(`</${tag}\\s*>`, 'gi'))?.length ?? 0
     if (openings !== 1 || closings !== 1) {
       return { ok: false, error: `design artifact must contain exactly one <${tag}> element` }
     }
@@ -594,13 +645,13 @@ export function validateDesignArtifactHtml(html: string, { remoteImages = remote
 
   if (
     !/<html(?:\s[^>]*)?>[\s\S]*<head(?:\s[^>]*)?>[\s\S]*<\/head\s*>[\s\S]*<body(?:\s[^>]*)?>[\s\S]*<\/body\s*>[\s\S]*<\/html\s*>\s*$/i.test(
-      source,
+      structure,
     )
   ) {
     return { ok: false, error: 'design artifact must be one complete html document with head and body' }
   }
 
-  for (const tag of parseOpeningTags(source)) {
+  for (const tag of tags) {
     const error = validateTag(tag, remoteImages)
     if (error) return { ok: false, error }
   }

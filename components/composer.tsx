@@ -925,7 +925,7 @@ export default function Composer({
             aria-controls={matching.length > 0 ? commandListId : undefined}
             aria-activedescendant={activeOptionId}
             rows={1}
-            placeholder="ask fx0 to design"
+            placeholder="Ask beep to design…"
             className="min-h-16 border-0 px-3 py-2.5 text-sm leading-5 shadow-none focus-visible:ring-0"
           />
           <script dangerouslySetInnerHTML={{ __html: RESTORE_PROMPT }} />

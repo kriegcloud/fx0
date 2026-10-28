@@ -544,7 +544,7 @@ export default function ChatApp({ account, sidebar, boot, preference, defaultMod
   // session switches and with a title the first turn assigns.
   useEffect(() => {
     const title = sessions.find((session) => session.id === sessionId)?.title
-    if (title) document.title = `${title} · fx0`
+    document.title = title ? `${title} · beep` : 'beep — design workspace'
   }, [sessionId, sessions])
 
   useEffect(() => {

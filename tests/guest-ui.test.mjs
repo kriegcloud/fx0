@@ -932,7 +932,7 @@ test('opening a chat keeps the remembered model and fast, and a new chat starts 
 test('the source link opens the fx0 repo in a new tab', (t) => {
   browser(t)
   const link = find(renderHooks(SourceLink).render({}), (node) => node.type === 'a')
-  assert.equal(link.props['aria-label'], 'fx0 source on GitHub (opens in a new tab)')
+  assert.equal(link.props['aria-label'], 'upstream fx0 source on GitHub (opens in a new tab)')
   assert.equal(link.props.href, 'https://github.com/vercel-labs/fx0')
   assert.equal(link.props.target, '_blank')
   assert.equal(link.props.rel, 'noopener noreferrer')
@@ -956,15 +956,14 @@ test('an attached image thumbnail opens the image full size', (t) => {
   assert.deepEqual(images, [props.src])
 })
 
-test('how it works explains fx0 and links to forking its repo', (t) => {
+test('how it works explains the workspace without promoting an upstream fork', (t) => {
   browser(t)
   const tree = renderHooks(HowItWorks).render({})
   const trigger = find(tree, (node) => node.type === 'button')
   assert.equal(trigger?.props['aria-label'], 'how it works')
   assert.equal(REPO_URL, 'https://github.com/vercel-labs/fx0')
   const repo = find(tree, (node) => node.type === 'a' && node.props.href === `${REPO_URL}/fork`)
-  assert.equal(repo?.props.children, 'fork fx0')
-  assert.equal(repo.props.target, '_blank')
+  assert.equal(repo, null)
   // The files it tells a fork to edit are where it says.
   const paths = []
   find(tree, (node) => { if (node.type === 'code' && /\.ts$/.test([].concat(node.props.children)[0])) paths.push(node.props.children); return false })

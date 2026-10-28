@@ -224,3 +224,78 @@ document.body.append(frame)
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+// The headless harness supplies user activation and disables the browser popup
+// blocker only for this test. Production requires a real user click.
+test('in Chrome, a design can populate, interact with, and close an isolated popout', async () => {
+  assert.ok(existsSync(CHROME), `Chrome not found at ${CHROME}; set CHROME_PATH`)
+  const popupHtml = `<!doctype html><html><head><title>Detached panel</title></head><body>
+  <button onclick="this.textContent=String(Number(this.textContent)+1)">0</button>
+  <script>
+  const out = {};
+  const button = document.querySelector('button');
+  button.click();
+  out.interactive = button.textContent === '1';
+  out.rtcBlocked = typeof RTCPeerConnection === 'undefined';
+  try { void document.cookie; out.cookiesBlocked = false; } catch { out.cookiesBlocked = true; }
+  try { void parent.document; out.appBlocked = false; } catch { out.appBlocked = true; }
+  addEventListener('securitypolicyviolation', event => {
+    if(event.violatedDirective === 'connect-src') { out.fetchBlocked = true; parent.postMessage({probe: out}, '*'); }
+  });
+  fetch('http://127.0.0.1:9/probe').catch(() => {});
+  </script></body></html>`
+  const raw = `<!doctype html><html><head><title>Popout test</title></head><body><script>
+  beep.openPopout(${JSON.stringify(popupHtml).replaceAll('</script', '<\\/script')}, {title:'Detached panel'}).then(handle => {
+    top.postMessage({opened: true}, '*');
+    addEventListener('message', event => {if(event.data === 'close-test-popout') handle.close()});
+  }, error => top.postMessage({error:String(error)}, '*'));
+  </script></body></html>`
+  const validation = validateDesignArtifactHtml(raw)
+  assert.equal(validation.ok, true, validation.error)
+  const prepared = prepareDesignArtifactHtml(validation.html, DESIGN_ARTIFACT_EMBEDDED_CSP, 'popout-test')
+  const harness = `<script>
+  Object.defineProperty(navigator, 'userActivation', {value:{isActive:true}});
+  const nativeOpen=window.open;
+  window.open=(...args)=>{
+    const popup=nativeOpen(...args);
+    if(popup) popup.addEventListener('message', event=>{
+      if(!event.data?.probe)return;
+      top.postMessage({probe:event.data.probe}, '*');
+      document.querySelector('iframe').contentWindow.postMessage('close-test-popout','*');
+      const timer=setInterval(()=>{if(popup.closed){clearInterval(timer);top.postMessage({closed:true},'*')}},25);
+    });
+    return popup;
+  };
+  </script>`
+  const server = http.createServer((request, response) => {
+    if (request.url === '/hold') return setTimeout(() => response.writeHead(404).end(), 1500)
+    if (request.url === '/frame') {
+      return response.writeHead(200, {'content-type': 'text/html', 'content-security-policy': DESIGN_FRAME_CSP})
+        .end(designFrameHtml(prepared, 'popout-test').replace('<script>', harness + '<script>'))
+    }
+    response.writeHead(200, {'content-type': 'text/html'}).end(`<!doctype html><html><body><pre id="out">{}</pre><script>
+    const out={};
+    addEventListener('message', ({data}) => {
+      if(data?.probe)Object.assign(out,data.probe);
+      if(data?.opened)out.opened=true;
+      if(data?.closed)out.closed=true;
+      if(data?.error)out.error=data.error;
+      document.querySelector('#out').textContent=JSON.stringify(out);
+    });
+    </script><iframe src="/frame"></iframe><img src="/hold"></body></html>`)
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const dir = await mkdtemp(join(tmpdir(), 'fx0-popout-'))
+  try {
+    const {stdout} = await promisify(execFile)(CHROME, [
+      '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-popup-blocking',
+      `--user-data-dir=${join(dir, 'profile')}`, '--dump-dom', `http://127.0.0.1:${server.address().port}/`,
+    ], {timeout: 60_000, maxBuffer: 1024 * 1024})
+    const out = JSON.parse(stdout.match(/<pre id="out">([^<]*)<\/pre>/)[1])
+    assert.deepEqual(out, {opened: true, interactive: true, rtcBlocked: true, cookiesBlocked: true, appBlocked: true, fetchBlocked: true, closed: true})
+  } finally {
+    server.closeAllConnections()
+    server.close()
+    await rm(dir, {recursive: true, force: true})
+  }
+})

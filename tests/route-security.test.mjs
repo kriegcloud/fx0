@@ -490,11 +490,12 @@ test('the artifact preview permits iframe origins but preserves opaque credentia
   assert.match(html, /setAttribute\('sandbox','allow-scripts'\)/)
   // The design only asks to open a link; the wrapper passes the ask to the app on this
   // origin, which shows the address and opens it on the user's own click.
-  assert.doesNotMatch(html, /window\.open/)
+  assert.match(html, /window\.open\('about:blank','_blank'/)
+  assert.match(html, /if\(!navigator\.userActivation\?\.isActive\)/)
   assert.match(html, /if\(event\.source!==frame\.contentWindow\|\|event\.data\?\.token!==token\)return;/)
   assert.match(html, /parent\.postMessage\(\{type:'fx0-artifact-open',url:event\.data\.url\},location\.origin\)/)
   assert.match(html, /navigator\.userActivation\?\.isActive!==false/)
-  assert.doesNotMatch(html, /allow-popups/)
+  assert.doesNotMatch(html, /allow-popups-to-escape-sandbox/)
   assert.match(html, /setAttribute\('credentialless',''\)/)
   // A blob: frame, not a data: URL, which browsers refuse past 2 MiB. The design string
   // cannot close the wrapper's script: its "<" are escaped, so only one </script> remains.

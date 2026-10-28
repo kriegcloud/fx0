@@ -1,5 +1,9 @@
 import { randomBytes } from 'node:crypto'
 import { del, get, list, put } from '@vercel/blob'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localMode } from './local-mode.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localDesignAssetStore } from './local-design-assets.ts'
 import {
   MAX_CHAT_ASSETS, MAX_DAILY_ASSETS, finishDesignAssetCleanup, pendingDesignAssetCleanups,
   queueDesignAssetCleanup, readDesignAssets, recordDesignAssets, reserveDesignAssets,
@@ -7,18 +11,22 @@ import {
 } from './journal'
 import type { PromptImage } from './prompt-images'
 
-// Images a message attached, kept in fx0's private Blob store so a design can show them
+// Images a message attached, kept privately in Blob or local storage so a design can show them
 // (as fx0-asset:<handle>). The chat's manifest in Redis is the access check: only a
 // handle recorded for the chat is ever read, and deleting the chat removes it.
 
 export interface DesignAssetStore {
-  put: typeof put
-  get: typeof get
-  del: typeof del
-  list: typeof list
+  put(pathname: string, body: Buffer, options: { access: 'private'; contentType: string; addRandomSuffix: false }): Promise<unknown>
+  get(pathname: string, options: { access: 'private' }): Promise<{ statusCode: number; stream: ReadableStream<Uint8Array> | null } | null>
+  del(pathnames: string[]): Promise<unknown>
+  list(options: { prefix: string; cursor?: string; limit: number }): Promise<{ blobs: { pathname: string }[]; hasMore: boolean; cursor?: string }>
 }
 
 const BLOB: DesignAssetStore = { put, get, del, list }
+
+function assetStore(): DesignAssetStore {
+  return localMode() ? localDesignAssetStore() : BLOB
+}
 
 /** A message that would pass the per-chat or per-day image cap. Nothing was stored. */
 export class DesignAssetLimitError extends Error {
@@ -44,7 +52,7 @@ export interface PendingDesignAssets {
  * design can name them once `stored` settles. Throws DesignAssetLimitError before
  * anything is stored when a cap would be passed.
  */
-export async function startDesignAssets(sessionId: string, userId: string, images: PromptImage[], store = BLOB): Promise<PendingDesignAssets> {
+export async function startDesignAssets(sessionId: string, userId: string, images: PromptImage[], store = assetStore()): Promise<PendingDesignAssets> {
   if (!images.length) return { handles: [], stored: Promise.resolve() }
   const reservedAt = Date.now()
   const reserved = await reserveDesignAssets(sessionId, userId, images.length, reservedAt)
@@ -87,14 +95,14 @@ export async function startDesignAssets(sessionId: string, userId: string, image
 }
 
 /** Stores a message's images, all or none, within the caps. Returns their handles in order. */
-export async function storeDesignAssets(sessionId: string, userId: string, images: PromptImage[], store = BLOB): Promise<string[]> {
+export async function storeDesignAssets(sessionId: string, userId: string, images: PromptImage[], store = assetStore()): Promise<string[]> {
   const pending = await startDesignAssets(sessionId, userId, images, store)
   await pending.stored
   return pending.handles
 }
 
 /** Retry failed rollbacks without losing their records or refunding quota twice. */
-export async function retryDesignAssetCleanup(store = BLOB): Promise<void> {
+export async function retryDesignAssetCleanup(store = assetStore()): Promise<void> {
   const pending = await pendingDesignAssetCleanups()
   await Promise.all(pending.map(async (cleanup: DesignAssetCleanup) => {
     try {
@@ -107,16 +115,16 @@ export async function retryDesignAssetCleanup(store = BLOB): Promise<void> {
 }
 
 /** One of the chat's images, or null when the chat never received that handle. */
-export async function readDesignAsset(sessionId: string, handle: string, store = BLOB): Promise<{ bytes: Buffer; mimeType: string } | null> {
+export async function readDesignAsset(sessionId: string, handle: string, store = assetStore()): Promise<{ bytes: Buffer; mimeType: string } | null> {
   const asset = (await readDesignAssets(sessionId, [handle])).get(handle)
   if (!asset) return null
   const result = await store.get(pathname(sessionId, handle), { access: 'private' })
-  if (!result || result.statusCode !== 200) return null
+  if (!result || result.statusCode !== 200 || !result.stream) return null
   return { bytes: Buffer.from(await new Response(result.stream).arrayBuffer()), mimeType: asset.mimeType }
 }
 
 /** Removes every stored image of a deleted chat. */
-export async function deleteDesignAssets(sessionId: string, store = BLOB): Promise<void> {
+export async function deleteDesignAssets(sessionId: string, store = assetStore()): Promise<void> {
   // Listed whole before deleting: deleting while paging would move the cursor past files.
   const pathnames: string[] = []
   let cursor: string | undefined

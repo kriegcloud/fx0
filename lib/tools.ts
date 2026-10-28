@@ -7,6 +7,8 @@ import { fetchPublicText } from './public-fetch.ts'
 const MAX_TOOL_OUTPUT = 32 * 1024
 
 export interface ToolHost {
+  /** Copies a validated local image into this chat and returns its immutable asset reference. */
+  importReferenceImage(image: import('./prompt-images').PromptImage): Promise<string>
   /** Registers an invocation; returns its call id for result paging. */
   reportInvocation(name: string): number
   storeResult(callId: number, text: string): void
@@ -70,7 +72,7 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
   const publishDesign: FxHostTool = {
     name: 'publish_design',
     description:
-      'Publish one complete self-contained HTML document as the authoritative design. Inline CSS and JavaScript, Canvas, animation, and event handlers are supported inside the secure preview iframe. Use once for the first design or for a broad rewrite; keep normal drafts under 12 KiB. It must include doctype, html, head, and body; keep scripts inline; use only accepted data: assets, local fragments, or <a href="https://..."> links (they open in a new tab); and do not add HTML comments, external assets, forms, scripted navigation, or nested frames. Use edit_design instead for localized follow-ups.',
+      'Publish one complete self-contained HTML document as the authoritative design. Inline CSS and JavaScript, Canvas, animation, event handlers, and user-click popout windows are supported inside the secure preview iframe. For popouts, call await beep.openPopout(html, {title: "Panel", width: 900, height: 650}) directly in a click handler and catch popup-blocking errors. Pass inline self-contained HTML; the returned handle has focus() and close(). Use this helper because native window.open is blocked by the credentialless preview. Use once for the first design or for a broad rewrite; keep normal drafts under 12 KiB. It must include doctype, html, head, and body; keep scripts inline; use only accepted data: assets, local fragments, or <a href="https://..."> links (they open in a new tab); and do not add HTML comments, external assets, forms, navigation of the preview or parent page, or nested frames. Self-contained beep.openPopout windows are allowed. Use edit_design instead for localized follow-ups.',
     inputSchema: {
       type: 'object',
       properties: {

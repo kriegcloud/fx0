@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { mkdtemp, mkdir, writeFile, readFile, symlink, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { execFile } from 'node:child_process'
-import { configuredReferenceRoots, referenceRoots, listReferenceFiles, readReferenceFile, searchReferenceFiles } from '../lib/reference-files.ts'
+import { configuredReferenceRoots, referenceRoots, listReferenceFiles, readReferenceFile, readReferenceImage, searchReferenceFiles } from '../lib/reference-files.ts'
 import { referenceTools } from '../lib/reference-tools.ts'
 
 const previous = { ...process.env }
@@ -73,13 +73,19 @@ test('literal search returns source evidence without hidden or escaped content',
   }
 })
 
-test('rejects binaries, special files, invalid paging, oversized files and lines', async () => {
+test('rejects binaries, special files, invalid paging and oversized files', async () => {
   await writeFile(path.join(root, 'binary.png'), 'fake image')
   await writeFile(path.join(root, 'binary.ts'), Buffer.from([1, 0, 2]))
   await writeFile(path.join(root, 'invalid.txt'), Buffer.from([255, 254]))
   await writeFile(path.join(root, 'large.txt'), 'a'.repeat(1024 * 1024 + 1))
   await writeFile(path.join(root, 'long-line.txt'), 'a'.repeat(25 * 1024))
-  for (const name of ['binary.png', 'binary.ts', 'invalid.txt', 'large.txt', 'long-line.txt']) await assert.rejects(() => readReferenceFile(name))
+  for (const name of ['binary.png', 'binary.ts', 'invalid.txt', 'large.txt']) await assert.rejects(() => readReferenceFile(name))
+  const first = await readReferenceFile('long-line.txt')
+  const second = await readReferenceFile('long-line.txt', undefined, undefined, undefined, first.nextChar)
+  assert.equal(first.format, 'characters')
+  assert.equal(first.truncated, true)
+  assert.equal(second.truncated, false)
+  assert.equal(first.content + second.content, 'a'.repeat(25 * 1024), 'minified documents page without gaps')
   await assert.rejects(() => readReferenceFile('brand'))
   await assert.rejects(() => readReferenceFile('brand/tokens.css', -1))
   await assert.rejects(() => readReferenceFile('brand/tokens.css', 1, 401))
@@ -109,8 +115,9 @@ test('search and directory enumeration report bounds instead of claiming complet
 test('registered tools are read-only, store evidence, handle denial and honor cancellation', async () => {
   const records = []
   const tools = referenceTools({ reportInvocation: name => { records.push(name); return 1 }, storeResult: (_id, text) => records.push(JSON.parse(text)) })
-  assert.deepEqual(tools.map(tool => tool.name), ['list_reference_roots', 'list_reference_files', 'read_reference_file', 'search_reference_files'])
-  assert.ok(tools.every(tool => tool.idempotent && tool.writes === false))
+  assert.deepEqual(tools.map(tool => tool.name), ['list_reference_roots', 'list_reference_files', 'read_reference_file', 'read_reference_image', 'search_reference_files'])
+  assert.ok(tools.every(tool => tool.writes === false))
+  assert.ok(tools.filter(tool => tool.name !== 'read_reference_image').every(tool => tool.idempotent))
   const read = tools.find(tool => tool.name === 'read_reference_file')
   const ctx = { signal: new AbortController().signal }
   const before = await readFile(path.join(root, 'brand/tokens.css'), 'utf8')
@@ -121,4 +128,52 @@ test('registered tools are read-only, store evidence, handle denial and honor ca
   const controller = new AbortController()
   controller.abort()
   await assert.rejects(() => read.execute({ path: 'brand/tokens.css' }, { signal: controller.signal }), { name: 'AbortError' })
+})
+
+test('local mode defaults to the home directory while explicit roots and opt-out still win', () => {
+  delete process.env.FX0_REFERENCE_ROOTS
+  try {
+    assert.deepEqual(configuredReferenceRoots(), [homedir()])
+    process.env.FX0_REFERENCE_ROOTS = '[]'
+    assert.deepEqual(configuredReferenceRoots(), [])
+  } finally { process.env.FX0_REFERENCE_ROOTS = JSON.stringify([root]) }
+})
+
+test('project skills and user skill directories are readable without exposing adjacent credentials', async () => {
+  for (const dir of ['project/.agents/skills/review', '.codex/skills/review', 'Downloads', 'project/apps/desktop']) {
+    await mkdir(path.join(root, dir), { recursive: true })
+  }
+  for (const file of ['project/.agents/skills/review/SKILL.md', '.codex/skills/review/SKILL.md', 'Downloads/theme.html', 'project/apps/desktop/main.rs']) {
+    await writeFile(path.join(root, file), 'readable-reference-marker')
+    assert.match((await readReferenceFile(file)).content, /readable-reference-marker/)
+  }
+  await writeFile(path.join(root, '.codex/auth.json'), '{"token":"must-not-read"}')
+  await assert.rejects(readReferenceFile('.codex/auth.json'))
+  assert.deepEqual((await listReferenceFiles('.codex')).entries.map(entry => entry.name), ['skills'])
+  const matches = await searchReferenceFiles('must-not-read')
+  assert.deepEqual(matches.matches, [])
+  assert.ok((await searchReferenceFiles('readable-reference-marker', 'project/.agents')).matches.length > 0)
+})
+
+test('local image tools return validated pixels and a design asset without logging base64', async () => {
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+  await writeFile(path.join(root, 'demo.png'), Buffer.from(png, 'base64'))
+  const { image } = await readReferenceImage('demo.png')
+  assert.equal(image.data, png)
+  assert.equal(image.mimeType, 'image/png')
+  await assert.rejects(readReferenceImage('brand/tokens.css'))
+  await assert.rejects(readReferenceImage('escape.md'))
+  const records = []
+  const host = {
+    reportInvocation: () => 1,
+    storeResult: (_, text) => records.push(text),
+    importReferenceImage: async value => { assert.deepEqual(value, image); return 'fx0-asset:AbCdEfGhIjKlMnOpQrStUvWx' },
+  }
+  const tool = referenceTools(host).find(tool => tool.name === 'read_reference_image')
+  const result = await tool.execute({ path: 'demo.png' }, { signal: new AbortController().signal })
+  assert.equal(result.type, 'libfx.tool-result')
+  assert.deepEqual(result.images, [image])
+  assert.match(result.text, /fx0-asset:AbCdEfGhIjKlMnOpQrStUvWx/)
+  assert.equal(records.join('').includes(png), false)
+  assert.equal(tool.idempotent, false, 'a recovery must not silently duplicate an imported attachment')
 })

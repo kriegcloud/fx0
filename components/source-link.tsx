@@ -9,7 +9,7 @@ export default function SourceLink() {
           href={REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="fx0 source on GitHub (opens in a new tab)"
+          aria-label="upstream fx0 source on GitHub (opens in a new tab)"
           className="grid size-8 shrink-0 place-items-center text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           {/* The octocat in the same square frame as the help button beside it. */}
@@ -19,7 +19,7 @@ export default function SourceLink() {
           </svg>
         </a>
       </TooltipTrigger>
-      <TooltipContent>view fx0 source on GitHub</TooltipContent>
+      <TooltipContent>view upstream fx0 source on GitHub</TooltipContent>
     </Tooltip>
   )
 }

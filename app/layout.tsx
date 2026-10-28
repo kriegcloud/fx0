@@ -1,19 +1,22 @@
 import type { Metadata, Viewport } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import localFont from 'next/font/local'
 import { ThemeProvider } from '../components/theme-provider'
 import { TooltipProvider } from '../components/ui/tooltip'
 import './globals.css'
 
+const inter = localFont({ src: './brand/inter.woff2', variable: '--font-beep-inter', weight: '100 900', display: 'swap' })
+const mono = localFont({ src: './brand/jetbrains-mono.woff2', variable: '--font-beep-mono', weight: '100 800', display: 'swap' })
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fx0.vercel.dev'),
-  title: 'fx0',
-  description: 'A web-native fx design agent running on libfx',
+  metadataBase: new URL(process.env.APP_URL || 'http://127.0.0.1:3000'),
+  title: 'beep — design workspace',
+  description: 'The beep design workspace. Create and refine interactive HTML with an AI design agent, built on fx0 and libfx.',
+  icons: { icon: '/brand/favicon.svg' },
   openGraph: {
     type: 'website',
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
   },
 }
 
@@ -21,7 +24,7 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#090909' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
   ],
 }
 
@@ -36,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${inter.variable} ${mono.variable}`}
     >
       <body>
         <script dangerouslySetInnerHTML={{ __html: PANES }} />

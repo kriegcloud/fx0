@@ -3,7 +3,6 @@
 import { memo, useState, type ReactNode } from 'react'
 import type { SessionInfo } from '../lib/events'
 import AccountMenu, { type AccountUser } from './account-menu'
-import SourceLink from './source-link'
 import Brand from './brand'
 import HowItWorks from './how-it-works'
 import NewChat from './new-chat'
@@ -77,7 +76,6 @@ function Sidebar({
       <div className="flex h-12 items-center justify-between gap-6 pl-6 pr-4.5">
         <Brand onHome={onNew} />
         <div className="flex items-center">
-          <SourceLink />
           <HowItWorks />
         </div>
       </div>

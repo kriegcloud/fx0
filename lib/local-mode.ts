@@ -41,7 +41,15 @@ export function proxyBaseUrl(): string {
 
 export function proxyOptions() {
   return {
-    provider: { name: 'cliproxy', baseUrl: proxyBaseUrl() },
+    provider: {
+      name: 'cliproxy', baseUrl: proxyBaseUrl(),
+      // Custom providers need explicit vision metadata: libfx cannot infer it
+      // from the proxy's OpenAI model list. Include both Opus 5.5 ID spellings.
+      models: {
+        'claude-opus-5-5': { supportsVision: true },
+        'claude-opus-5.5': { supportsVision: true },
+      },
+    },
     credentials: async () => ({ apiKey: process.env.FX0_PROXY_API_KEY || '' }),
   }
 }

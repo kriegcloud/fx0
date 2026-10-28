@@ -207,7 +207,10 @@ export function applyStreamItem(entries: ChatEntry[], item: StreamItem): ChatEnt
 
   if (item.type === 'turn_start' && item.id != null) {
     const recovering = entries.some((entry) => entry.turnId === item.id)
-    return recovering ? entries.filter((entry) => entry.turnId !== item.id) : entries
+    // Admission/storage can fail before libfx's delayed turn_start is projected.
+    // Retain the error explaining the cancellation, even when a start (or a
+    // recovery start) replaces the turn's provisional output.
+    return recovering ? entries.filter((entry) => entry.turnId !== item.id || entry.type === 'error') : entries
   }
 
   if (item.type === 'accepted' && item.clientId) {

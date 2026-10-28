@@ -37,8 +37,10 @@ your proxy's current account access and quotas.
 Chat ownership/history use PGlite (local Postgres), and the existing journal runs
 against a dedicated Redis/Valkey child through an authenticated local HTTP
 adapter. Data, encrypted turn identity records, the session encryption secret,
-and libfx sessions live in the gitignored `.local/` directory. Redis uses an
-append-only log with one-second syncing. Ctrl-C stops this launcher's app and
+and libfx sessions live in the gitignored `.local/` directory. Attached images
+are stored privately in `.local/assets/` (or under `FX0_LOCAL_DATA_DIR`) and
+require no Vercel Blob credentials. Deleting a chat removes its stored images.
+Redis uses an append-only log with one-second syncing. Ctrl-C stops this launcher's app and
 Redis process; rerunning the command reopens the saved chats.
 
 Optional settings, supplied as environment variables or in `.env.local`:
@@ -52,7 +54,7 @@ Optional settings, supplied as environment variables or in `.env.local`:
 | `FX0_EFFORT` | `medium` |
 | `FX0_LOCAL_PORT` | `3000` |
 | `FX0_LOCAL_DATA_DIR` | `.local` |
-| `FX0_REFERENCE_ROOTS` | JSON array containing `~/YeeBois/projects/beep-effect/packages/foundation/ui-system` |
+| `FX0_REFERENCE_ROOTS` | JSON array containing the user home directory (`~`) |
 
 Local mode is for one trusted workstation user. It rejects foreign request
 hosts/origins and cannot be enabled on Vercel. The ordinary `bun run dev` and
@@ -60,12 +62,13 @@ hosted deployment continue to use the Vercel setup below.
 
 ## Local theme and branding references
 
-`bun run dev:local` gives the agent **read-only source access** to
-`~/YeeBois/projects/beep-effect/packages/foundation/ui-system` by default. That
-includes the `brand` package and `ui/src/themes`. The parent agent and its
-research subagents can list directories, search literal text, and read numbered
-file excerpts through `list_reference_roots`, `list_reference_files`,
-`search_reference_files`, and `read_reference_file`.
+`bun run dev:local` gives the agent **read-only access to the user home directory**
+by default, including projects, Downloads, and `.agents/skills` or `.codex/skills`
+guidance. The parent agent and its research subagents can list directories, search
+literal text, and read excerpts through `list_reference_roots`,
+`list_reference_files`, `search_reference_files`, and `read_reference_file`.
+`read_reference_image` reads PNG/JPEG/GIF/WebP images up to 2 MiB, returns them to
+the model, and stores a private copy as an `fx0-asset:` handle for the preview.
 
 For example, ask:
 
@@ -81,11 +84,11 @@ FX0_REFERENCE_ROOTS='["/absolute/path/to/brand", "/absolute/path/to/theme"]'
 
 Set `FX0_REFERENCE_ROOTS='[]'` to disable the tools. Only configured directories
 are readable, and only in local mode. The model cannot grant itself additional
-roots. Hidden paths, credential filenames, dependency/build directories, binary
-files, and symlinks escaping the configured roots are rejected. The tools have
-no write or shell operations. Text files are limited to 1 MiB, reads are paged,
-and searches report truncation when bounded. UTF-8 SVG source is supported;
-binary images are not. The design preview still requires self-contained HTML,
+roots. Credential filenames and stores, unrelated hidden paths, dependency/build
+directories, and symlinks escaping the configured roots are rejected. The tools have
+no write or shell operations. Text files are limited to 1 MiB, reads are paged (including character paging
+for minified HTML), and searches report truncation when bounded. UTF-8 SVG source
+is supported; raster images use `read_reference_image`. The design preview still requires self-contained HTML,
 so local assets must be adapted inline rather than referenced by filesystem URL.
 
 Requested source excerpts are sent to the selected model through CLIProxyAPI
@@ -265,7 +268,7 @@ The auth and route tests mock Vercel, AI Gateway and both databases, so check a 
 
 ## Safety
 
-Generated pages run in a sandboxed iframe on an opaque origin. They can't read the app's cookies, storage or credentials, and their Content Security Policy blocks network requests (`connect-src 'none'`). It's still the browser enforcing all of this, though, not a sealed VM.
+Generated pages run in a sandboxed iframe on an opaque origin. Published designs can create interactive popout windows with `await beep.openPopout(html, { title: "Panel", width: 900, height: 650 })` directly from a user click handler. Pass self-contained HTML with inline styles and scripts; the returned handle supports `focus()` and `close()`. Catch rejected promises to show popup-blocking feedback. Each popout contains an isolated iframe with the same sandbox and Content Security Policy. Native `window.open` remains unavailable inside the credentialless design frame. Exported HTML includes a standalone implementation of the same helper. Browser popup blocking still applies; streamed drafts remain scriptless until published. They can't read the app's cookies, storage or credentials, and their Content Security Policy blocks network requests (`connect-src 'none'`). It's still the browser enforcing all of this, though, not a sealed VM.
 
 Paid model requests carry the sender's OAuth token only to AI Gateway. Between requests it stays sealed in Redis and expires with the token. Sponsored requests require a recorded trial admission; the server key is never sent to a browser, cookie, journal or model prompt. Signing out deletes that login's stored credentials and revokes its token. A running turn it funded stops at its next model request; another login's turns keep running. Treat the session cookie and `SESSION_SECRET` as credentials.
 

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "lib/agent.ts"
+        ],
+        "createdAt": "2026-10-25T01:15:28.372Z",
+        "reason": "Agent review: this is model instruction prose documenting img src syntax, not a rendered image element."
+      }
+    ]
+  }
+}

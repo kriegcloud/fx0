@@ -124,7 +124,7 @@ try {
     ...process.env, FX0_LOCAL: '1', APP_URL: `http://127.0.0.1:${port}`,
     SESSION_SECRET: secret, FX_SESSIONS_DIR: path.join(data, 'sessions'), FX0_PROXY_BASE_URL: baseUrl, FX0_PROXY_API_KEY: apiKey,
     FX0_MODEL: model, FX0_EFFORT: process.env.FX0_EFFORT || 'medium', FX0_FREE_PROMPTS: '0',
-    FX0_REFERENCE_ROOTS: process.env.FX0_REFERENCE_ROOTS || JSON.stringify([path.join(homedir(), 'YeeBois/projects/beep-effect/packages/foundation/ui-system')]),
+    FX0_REFERENCE_ROOTS: process.env.FX0_REFERENCE_ROOTS || JSON.stringify([homedir()]),
     FX0_LOCAL_DATA_DIR: data, FX0_REDIS_PREFIX: 'fx0:local',
     KV_REST_API_URL: `http://127.0.0.1:${bridge.address().port}`, KV_REST_API_TOKEN: restToken,
   }

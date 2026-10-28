@@ -7,6 +7,7 @@ import { createFxAgent, createFxEngine, createMemoryPersistence } from 'libfx'
 import { local } from 'libfx/durable-local'
 import { gatewayFetch } from '../lib/gateway-session.ts'
 import { createDraftContext } from '../lib/draft-context.ts'
+import { proxyOptions } from '../lib/local-mode.ts'
 
 // Exercise the installed SDK/native transport, not a mocked createFxAgent. The
 // external Gateway response is synthetic; no provider or real credentials run.
@@ -161,6 +162,55 @@ test('installed libfx restores the original turn before its first recovered mode
     await recovered?.close()
   }
 })
+
+for (const model of ['claude-opus-5-5', 'claude-opus-5.5']) {
+  test(`local proxy sends first and follow-up Opus image prompts (${model})`, { timeout: 15_000 }, async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fx0-proxy-images-'))
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jP0cAAAAASUVORK5CYII='
+    const requests = []
+    let agent
+    try {
+      const options = proxyOptions()
+      agent = createFxAgent({
+        ...options, credentials: async () => ({ apiKey: 'synthetic-proxy-key' }),
+        durability: local({ dir }), model, instructions: 'Reply briefly.', tools: [],
+        fetch: async (input, init = {}) => {
+          assert.equal(String(input), `${options.provider.baseUrl}/chat/completions`)
+          assert.equal(new Headers(init.headers).get('authorization'), 'Bearer synthetic-proxy-key')
+          requests.push(JSON.parse(typeof init.body === 'string' ? init.body : new TextDecoder().decode(init.body)))
+          return new Response([
+            'data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"Image received."},"finish_reason":null}]}',
+            'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
+            'data: [DONE]', '',
+          ].join('\n\n'), { headers: { 'content-type': 'text/event-stream' } })
+        },
+      })
+      const session = agent.session()
+      for (const messageId of ['m1', 'm2']) {
+        const turn = session.prompt([
+          { type: 'text', text: 'Use this image.' },
+          { type: 'image', mimeType: 'image/png', data: png },
+        ], { messageId, signal: AbortSignal.timeout(5000) })
+        const result = turn.result
+        void result.catch(() => {})
+        const events = []
+        for await (const event of turn) events.push(event)
+        assert.equal((await result).stopReason, 'end_turn')
+        assert.equal(events.filter(event => event.type === 'text_delta').map(event => event.delta).join(''), 'Image received.')
+      }
+      assert.equal(requests.length, 2)
+      for (const request of requests) {
+        assert.equal(request.model, model)
+        const user = request.messages.filter(message => message.role === 'user').at(-1)
+        assert.ok(user.content.some(part => part.type === 'image_url' && part.image_url.url === `data:image/png;base64,${png}`),
+          'the proxy request must retain the exact image bytes')
+      }
+    } finally {
+      await agent?.close()
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+}
 
 test('installed libfx admits first and follow-up image prompts through a durable queue', { timeout: 15_000 }, async () => {
   const dir = await mkdtemp(join(tmpdir(), 'fx0-images-'))

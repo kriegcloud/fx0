@@ -1,9 +1,10 @@
 import { Suspense } from 'react'
+import { BeepWordmark } from '../../components/beep-wordmark'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server.js'
 import { requireUserSession } from '@/lib/auth'
 
-export const metadata = { title: 'Sign in · fx0' }
+export const metadata = { title: 'Sign in · beep' }
 
 const ERRORS: Record<string, string> = {
   team_access: 'Choose a Vercel team with AI Gateway access to continue.',
@@ -44,8 +45,8 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
       <section className="w-full max-w-sm border border-border p-8" aria-labelledby="login-heading">
-        <p className="mb-8 font-mono text-sm text-foreground-secondary">fx0</p>
-        <h1 id="login-heading" className="text-xl font-medium tracking-tight">Sign in to fx0</h1>
+        <BeepWordmark className="mb-8 text-2xl" />
+        <h1 id="login-heading" className="text-xl font-medium tracking-tight">Sign in to beep</h1>
         <p className="mt-3 text-sm leading-6 text-foreground-secondary">
           Build with your Vercel account and your team’s AI Gateway access.
         </p>

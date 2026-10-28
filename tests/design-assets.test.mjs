@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { registerHooks } from 'node:module'
+import { mkdtemp, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { localDesignAssetStore } from '../lib/local-design-assets.ts'
 
 // design-assets keeps its manifest in the chat journal; here that is an in-memory map,
 // and the Blob store is a fake passed in, so no network or Redis is involved.
@@ -58,6 +62,73 @@ const CHAT = '11111111-1111-4111-8111-111111111111'
 const USER = 'user_a'
 const HANDLE = 'AbCdEfGhIjKlMnOpQrStUvWx'
 const doc = (body, head = '') => `<!doctype html><html><head>${head}</head><body>${body}</body></html>`
+
+test('local mode stores and reloads private attachments without Blob credentials and deletes only the selected chat', async () => {
+  const previous = { ...process.env }
+  const dir = await mkdtemp(join(tmpdir(), 'fx0-local-assets-'))
+  try {
+    process.env.FX0_LOCAL = '1'
+    process.env.APP_URL = 'http://127.0.0.1:3000'
+    process.env.FX0_LOCAL_DATA_DIR = dir
+    delete process.env.VERCEL
+    delete process.env.BLOB_READ_WRITE_TOKEN
+    const image = { type: 'image', data: PNG, mimeType: 'image/png' }
+    const handles = await storeDesignAssets(CHAT, USER, [image, image])
+    const otherChat = '22222222-2222-4222-8222-222222222222'
+    const [other] = await storeDesignAssets(otherChat, USER, [image])
+    assert.equal((await stat(join(dir, 'assets'))).mode & 0o777, 0o700)
+    for (const handle of handles) {
+      assert.equal((await stat(join(dir, 'assets', `${CHAT}-${handle}`))).mode & 0o777, 0o600)
+      // A new store instance proves bytes survive beyond the uploading instance.
+      const saved = await readDesignAsset(CHAT, handle, localDesignAssetStore())
+      assert.equal(saved.bytes.toString('base64'), PNG)
+      assert.equal(saved.mimeType, 'image/png')
+      assert.equal(await readDesignAsset(otherChat, handle), null)
+    }
+    const store = localDesignAssetStore()
+    const first = await store.list({ prefix: `chats/${CHAT}/`, limit: 1 })
+    const second = await store.list({ prefix: `chats/${CHAT}/`, cursor: first.cursor, limit: 1 })
+    assert.equal(first.hasMore, true)
+    assert.equal(second.hasMore, false)
+    assert.equal(new Set([...first.blobs, ...second.blobs].map(blob => blob.pathname)).size, 2)
+    await deleteDesignAssets(CHAT)
+    assert.deepEqual(await readdir(join(dir, 'assets')), [`${otherChat}-${other}`])
+    assert.equal((await readDesignAsset(otherChat, other)).bytes.toString('base64'), PNG)
+    await deleteDesignAssets(CHAT) // Idempotent cleanup of already-removed files.
+  } finally {
+    process.env = previous
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('local image paths cannot traverse directories or read symbolic links', async () => {
+  const previous = process.env.FX0_LOCAL_DATA_DIR
+  const dir = await mkdtemp(join(tmpdir(), 'fx0-local-assets-paths-'))
+  try {
+    process.env.FX0_LOCAL_DATA_DIR = dir
+    const store = localDesignAssetStore()
+    const options = { access: 'private', contentType: 'image/png', addRandomSuffix: false }
+    const pathname = `chats/${CHAT}/${HANDLE}`
+    await store.put(pathname, Buffer.from(PNG, 'base64'), options)
+    for (const invalid of ['../outside', `chats/${CHAT}/../outside`, `${pathname}/extra`, '/tmp/outside']) {
+      await assert.rejects(store.put(invalid, Buffer.from('no'), options), /Invalid local image path/)
+      await assert.rejects(store.get(invalid, { access: 'private' }), /Invalid local image path/)
+      await assert.rejects(store.del([pathname, invalid]), /Invalid local image path/)
+    }
+    assert.ok(await store.get(pathname, { access: 'private' }), 'invalid deletion batch must not delete valid files')
+    await assert.rejects(store.list({ prefix: '../', limit: 1000 }), /Invalid local image prefix/)
+    await store.del([pathname])
+    await writeFile(join(dir, 'outside'), 'private')
+    await symlink(join(dir, 'outside'), join(dir, 'assets', `${CHAT}-${HANDLE}`))
+    await assert.rejects(store.get(pathname, { access: 'private' }), { code: 'ELOOP' })
+    await store.del([pathname])
+    assert.equal(await store.get(pathname, { access: 'private' }), null)
+  } finally {
+    if (previous === undefined) delete process.env.FX0_LOCAL_DATA_DIR
+    else process.env.FX0_LOCAL_DATA_DIR = previous
+    await rm(dir, { recursive: true, force: true })
+  }
+})
 
 function fakeStore({ failOn = -1 } = {}) {
   const files = new Map()

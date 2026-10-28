@@ -1,8 +1,8 @@
 'use client'
 
+import { BeepWordmark } from './beep-wordmark'
 import { useId, useRef, useState, type ReactNode } from 'react'
 import { fastClick } from '../lib/fast-click'
-import { buttonVariants } from './ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from './ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -28,7 +28,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 // The help dialog's intro; the empty preview has its own, about the space it fills.
 const INTRO = (
   <>
-    fx0 shows what you can build with <External href="https://www.npmjs.com/package/libfx">libfx</External>, the agent
+    beep uses <External href="https://www.npmjs.com/package/libfx">libfx</External>, the agent
     from fx as a JavaScript library. One <code>createFxAgent()</code> call gives you the agent loop, streaming, tool
     calls and durable sessions.
   </>
@@ -37,14 +37,14 @@ const INTRO = (
 const BODY = (
   <>
     <Section title="when you send">
-      <p>libfx runs the agent inside a Vercel Function. It calls the model and the tools and streams each step to your tab.</p>
+      <p>libfx runs the agent inside the app server. It calls the model and the tools and streams each step to your tab.</p>
     </Section>
 
     <Section title="durable">
       <p>
-        Each chat is a libfx session, saved step by step in
-        a <External href="https://workflow-sdk.dev/worlds">Workflow world</External>. If the function dies mid-reply,
-        a new one picks up from the last step.
+        Each chat is a libfx session, saved step by step in local storage on this workstation or
+        a <External href="https://workflow-sdk.dev/worlds">Workflow world</External> when hosted.
+        A restored session can continue from its saved steps.
       </p>
     </Section>
 
@@ -57,16 +57,15 @@ const BODY = (
 )
 
 // A short intro for the preview before there is a design. The rest opens above a
-// footer that keeps both actions in one place: read more/less left, fork right.
+// footer that expands practical help without taking you out of the workspace.
 export function HowItWorksPanel() {
   const [expanded, setExpanded] = useState(false)
   const bodyId = useId()
   return (
     <article aria-labelledby="fx0-intro-title" className="text-sm leading-6 text-muted-foreground">
-      <h2 id="fx0-intro-title" className="text-base font-medium text-foreground">fx0</h2>
+      <h2 id="fx0-intro-title" className="text-foreground"><BeepWordmark className="text-2xl" /></h2>
       <p className="mt-2">
-        fx0 is an <External href={REPO_URL}>open-source design agent</External> built to
-        showcase <External href="https://www.npmjs.com/package/libfx">libfx</External>&apos;s speed and durability.
+        A workspace for exploring and refining interface ideas.
       </p>
       <p className="mt-2">Describe a page in the chat and it shows up here as one HTML file.</p>
       <div id={bodyId} hidden={!expanded}>{BODY}</div>
@@ -80,7 +79,6 @@ export function HowItWorksPanel() {
         >
           {expanded ? 'read less' : 'read more'}
         </button>
-        <External href={`${REPO_URL}/fork`}>fork fx0</External>
       </div>
     </article>
   )
@@ -138,14 +136,7 @@ export default function HowItWorks() {
 
           {BODY}
 
-          <a
-            href={`${REPO_URL}/fork`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ className: 'mt-6' })}
-          >
-            fork fx0
-          </a>
+
         </DialogContent>
       </Dialog>
     </>

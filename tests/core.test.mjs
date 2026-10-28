@@ -9,6 +9,7 @@ import {
   MAX_DESIGN_ARTIFACT_BYTES,
   normalizeDesignArtifactHtml,
   prepareDesignArtifactHtml,
+  rewriteRemoteImages,
   validateDesignArtifactHtml,
 } from '../lib/design-artifact.ts'
 import {
@@ -544,6 +545,16 @@ test('design artifact validation accepts inline CSS, JavaScript, Canvas, data as
   assert.match(embedded, /parent\.postMessage/)
   assert.match(embedded, /ready-token/)
   assert.ok(embedded.indexOf('RTCPeerConnection') < embedded.indexOf('const canvas'))
+})
+
+test('popout HTML templates are script text, not extra document structure or CSS assets', () => {
+  const popup = '<!doctype html><html><head><style>body{background:url(https://example.com/inside.png)}</style></head><body>Panel</body></html>'
+  const html = documentWith(`<script>const html=${JSON.stringify(popup)};const open=()=>beep.openPopout(html);</script>`)
+  assert.equal(validateDesignArtifactHtml(html).ok, true)
+  assert.match(prepareDesignArtifactHtml(html), /globalThis\.beep=\{openPopout:/)
+  assert.match(prepareDesignArtifactHtml(html, DESIGN_ARTIFACT_EMBEDDED_CSP, 'token'), /popout-open/)
+  assert.equal(rewriteRemoteImages(html, () => 'data:image/png;base64,AA=='), html)
+  assertInvalid(documentWith('<body>extra</body>'), 'design artifact must contain exactly one <body> element')
 })
 
 test('design artifact validation rejects external scripts and scripted navigation', () => {
