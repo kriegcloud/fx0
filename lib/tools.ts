@@ -5,6 +5,8 @@ import { fetchPublicText } from './public-fetch.ts'
 import { CAPTURE_WIDTH, captureWidth } from './capture-protocol.ts'
 
 const MAX_TOOL_OUTPUT = 32 * 1024
+export const VERIFY_REMINDER =
+  'If the user asked to implement, replicate, or match a design, page, or site, call screenshot_design now and compare it before replying.'
 
 export interface ToolHost {
   /** Registers an invocation; returns its call id for result paging. */
@@ -86,7 +88,9 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
     },
     async execute(input: { html: string }) {
       host.reportInvocation('publish_design')
-      return host.publishDesign(input.html)
+      const result = await host.publishDesign(input.html)
+      // A rule in the instructions alone was skipped; the reminder lands where the model decides to reply.
+      return result.ok && result.changed ? { ...result, next: VERIFY_REMINDER } : result
     },
   }
 
@@ -126,7 +130,7 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
   const screenshotDesign: FxHostTool = {
     name: 'screenshot_design',
     description:
-      'Screenshot the published design as the preview renders it, at the size the user sees it (1280x800 when the preview is closed). By default it shows the visible viewport; set full_page to see the whole page, top to bottom, in viewport-high images (at most 8). Use it after publishing when the user attached a reference to match or the layout cannot be verified from the markup; skip it for copy, color, or other small edits. Use full_page when the sections below the first screen matter. Needs an fx0 tab open and in front; on failure, continue without it.',
+      'Screenshot the published design as the preview renders it, at the size the user sees it (1280x800 when the preview is closed). By default it shows the visible viewport; set full_page to see the whole page, top to bottom, in viewport-high images (at most 8). Use it after publishing when the user asks to implement, replicate, or match a design, page, or site (from an image, a URL, or a description) or the layout cannot be verified from the markup; skip it for copy, color, or other small edits. Use full_page when the sections below the first screen matter. Needs an fx0 tab open and in front; on failure, continue without it.',
     inputSchema: {
       type: 'object',
       properties: {
