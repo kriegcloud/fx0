@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server.js'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { needsTokenRefresh, refreshAccessToken, sessionWithRefresh } from './auth.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
-import { forwardSessionCookie, grantCookieName, GRANT_COOKIE_PREFIX, isLoginId, SESSION_COOKIE_NAME } from './auth-protocol.ts'
+import { forwardSessionCookie, grantCookieName, GRANT_COOKIE_PREFIX, isLoginId, logAuth, SESSION_COOKIE_NAME } from './auth-protocol.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { logTag } from './auth-crypto.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { getGrantFromRequest, getSessionFromRequest, isAuthenticatedSession, sealSessionCookie, type SessionCookie, type SessionData } from './secure-session.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
@@ -43,6 +45,15 @@ export function withRequestSession(body: SessionHandler) {
           sealed = await sealSessionCookie(refreshed)
         }
         if (sealed) cookies.push(sealed)
+        if (result.status !== 'transient') {
+          // Session age separates a token that outlived its grant from a recent
+          // login whose rotated cookie never reached this browser.
+          const now = Date.now()
+          logAuth(result.status === 'ok' ? 'auth:session:renewed' : 'auth:session:ended', {
+            user: logTag(grant.userId), login: logTag(grant.loginId), rt: logTag(grant.refreshToken!),
+            sessionAgeS: Math.round((now - grant.loginAt) / 1000), accessExpiresInS: Math.round((grant.expiresAt - now) / 1000),
+          }, result.status === 'ok' ? 'info' : 'error')
+        }
       }
 
       if (!revoked && isAuthenticatedSession(grant) && expiresAt <= Date.now() && sealed?.value !== '') {

@@ -3,11 +3,11 @@ import { sealData, unsealData } from 'iron-session'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { AuthError, type AccountUser } from './accounts.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
-import { hashHandle, randomHandle } from './auth-crypto.ts'
+import { hashHandle, logTag, randomHandle } from './auth-crypto.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { getSession, getSessionOptions, isAuthenticatedSession, type SessionData } from './secure-session.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
-import { MIN_GATEWAY_VALIDITY_MS, TOKEN_ENDPOINT, validOAuthTokens, type OAuthTokens } from './auth-protocol.ts'
+import { logAuth, MIN_GATEWAY_VALIDITY_MS, TOKEN_ENDPOINT, validOAuthTokens, type OAuthTokens } from './auth-protocol.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { loginRevoked } from './turn-credential.ts'
 
@@ -126,11 +126,6 @@ export interface RefreshCache {
   release(key: string, owner: string): Promise<void>
 }
 
-// Server log for renewal failures: HTTP status and the OAuth error code only.
-function logRefresh(event: string, detail: Record<string, unknown> = {}): void {
-  console.error(JSON.stringify({ at: new Date().toISOString(), event, ...detail }))
-}
-
 export function needsTokenRefresh(session: Partial<SessionData>, now = Date.now()): boolean {
   return isAuthenticatedSession(session) && !!session.refreshToken && session.expiresAt <= now + MIN_GATEWAY_VALIDITY_MS
 }
@@ -146,8 +141,9 @@ export function createRefreshCoordinator(boundary: { fetch: typeof fetch; cache:
   async function exchange(refreshToken: string): Promise<RefreshResult> {
     const clientId = process.env.VERCEL_OAUTH_CLIENT_ID
     const clientSecret = process.env.VERCEL_OAUTH_CLIENT_SECRET
+    const rt = logTag(refreshToken)
     if (!clientId || !clientSecret) {
-      logRefresh('auth:refresh:unconfigured')
+      logAuth('auth:refresh:unconfigured', {}, 'error')
       return { status: 'transient' }
     }
     try {
@@ -159,23 +155,26 @@ export function createRefreshCoordinator(boundary: { fetch: typeof fetch; cache:
       const body: unknown = await response.json().catch(() => null)
       if (!response.ok) {
         const code = body && typeof body === 'object' && 'error' in body && typeof body.error === 'string' ? body.error.slice(0, 64) : null
-        logRefresh('auth:refresh:rejected', { status: response.status, error: code })
+        logAuth('auth:refresh:rejected', { rt, status: response.status, error: code }, 'error')
         return code === 'invalid_grant' && response.status === 400 ? { status: 'terminal' } : { status: 'transient' }
       }
       if (!validOAuthTokens(body)) {
-        logRefresh('auth:refresh:malformed', { status: response.status })
+        logAuth('auth:refresh:malformed', { rt, status: response.status }, 'error')
         return { status: 'transient' }
       }
       // ID tokens are not needed by refresh and must not inflate cached results.
       const tokens = { access_token: body.access_token, refresh_token: body.refresh_token, expires_in: body.expires_in }
+      // rt -> next links a later rejection of rt to this exchange (a replayed token).
+      logAuth('auth:refresh:exchanged', { rt, next: logTag(tokens.refresh_token ?? refreshToken), expiresIn: tokens.expires_in })
       return { status: 'ok', tokens, expiresAt: Date.now() + tokens.expires_in * 1000 }
     } catch (error) {
-      logRefresh('auth:refresh:error', { error: (error as Error)?.name ?? 'Error' })
+      logAuth('auth:refresh:error', { rt, error: (error as Error)?.name ?? 'Error' }, 'error')
       return { status: 'transient' }
     }
   }
 
   async function coordinated(refreshToken: string, key: string): Promise<RefreshResult> {
+    const rt = logTag(refreshToken)
     try {
       const password = getSessionOptions().password
       async function cached(): Promise<RefreshResult | null> {
@@ -188,7 +187,9 @@ export function createRefreshCoordinator(boundary: { fetch: typeof fetch; cache:
           throw new Error('Invalid refresh cache result')
         }
         // Older builds cached transient failures; one blip must not be replayed.
-        return entry.result.status === 'transient' ? null : entry.result
+        if (entry.result.status === 'transient') return null
+        logAuth('auth:refresh:reused', { rt, status: entry.result.status })
+        return entry.result
       }
       const prior = await cached()
       if (prior) return prior
@@ -201,6 +202,7 @@ export function createRefreshCoordinator(boundary: { fetch: typeof fetch; cache:
           if (result) return result
         } while (Date.now() < deadline)
         // Do not exchange a stale token while another instance owns its lease.
+        logAuth('auth:refresh:wait_timeout', { rt }, 'error')
         return { status: 'transient' }
       }
       // Another owner may have published between our first read and acquire.
@@ -214,15 +216,17 @@ export function createRefreshCoordinator(boundary: { fetch: typeof fetch; cache:
         return result
       }
       const value = await sealData({ key, result, expiresAt: Date.now() + REFRESH_RESULT_SECONDS * 1000 }, { password, ttl: REFRESH_RESULT_SECONDS })
-      try {
-        await boundary.cache.publish(key, owner, value, REFRESH_RESULT_SECONDS)
-      } catch {
-        // A rotation already succeeded: still persist it in this browser rather
-        // than discard its only live refresh token. The unreleased lease expires.
+      // A rotation already succeeded: still persist it in this browser rather
+      // than discard its only live refresh token. The unreleased lease expires.
+      // Unpublished, other instances holding rt will exchange it again and fail.
+      const published = await boundary.cache.publish(key, owner, value, REFRESH_RESULT_SECONDS)
+        .catch((error) => (error as Error)?.name ?? 'Error')
+      if (published !== true) {
+        logAuth('auth:refresh:unpublished', { rt, status: result.status, error: published || 'lease_lost' }, 'error')
       }
       return result
     } catch (error) {
-      logRefresh('auth:refresh:unavailable', { error: (error as Error)?.name ?? 'Error' })
+      logAuth('auth:refresh:unavailable', { rt, error: (error as Error)?.name ?? 'Error' }, 'error')
       return { status: 'transient' }
     }
   }

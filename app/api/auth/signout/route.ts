@@ -1,7 +1,8 @@
 import { after, NextResponse, type NextRequest } from 'next/server'
 import { AuthError } from '@/lib/accounts'
 import { revokeAccessToken } from '@/lib/auth'
-import { assertSameOrigin, FLOW_COOKIE_NAME, FLOW_COOKIE_OPTIONS, isLoginId, SESSION_COOKIE_NAME } from '@/lib/auth-protocol'
+import { logTag } from '@/lib/auth-crypto'
+import { assertSameOrigin, logAuth, FLOW_COOKIE_NAME, FLOW_COOKIE_OPTIONS, isLoginId, SESSION_COOKIE_NAME } from '@/lib/auth-protocol'
 import { getSessionForSignOut, sealSessionCookie, selectorCookie } from '@/lib/secure-session'
 import { signedInHintCookie, signOutPendingCookie } from '@/lib/session-cookies'
 import { revokeLoginCredentials } from '@/lib/turn-credential'
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
       status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '5' },
     })
   }
+  if (userId && sessionLoginId) logAuth('auth:signout', { user: logTag(userId), login: logTag(sessionLoginId) })
   // Workers reject the revoked login even if cleanup or provider revocation
   // fails after the response. Neither needs to delay the browser.
   after(() => Promise.all([
