@@ -385,10 +385,14 @@ test('a chat started with a DESIGN.md carries it in the instructions of every pr
   assert.match(f.sent[0].sessionOptions.instructions, /<design_md>\nUse teal\.\n<\/design_md>/)
 })
 
-test('the instructions make the agent screenshot its design before claiming it matches a reference', async (t) => {
+test('the instructions make the agent screenshot its design when implementing or replicating one', async (t) => {
   const f = fixture(t)
   await runtime.submitPrompt(boundHost('reference-chat'), 'Ada', 'Reimplement this exactly')
-  assert.match(f.sent[0].sessionOptions.instructions, /reference to match or asks for an exact copy, verify before reporting: after publishing, call screenshot_design at the width the reference was made at/)
+  const { instructions } = f.sent[0].sessionOptions
+  assert.match(instructions, /asks to implement, replicate, recreate, clone, or match a design, page, or site, whether from an attached image, a URL, or a description, or asks for an exact copy, verify before reporting: after publishing, call screenshot_design/)
+  assert.match(instructions, /at the width the reference was made at when there is one/)
+  const tool = f.agentOptions.tools.find((candidate) => candidate.name === 'screenshot_design')
+  assert.match(tool.description, /asks to implement, replicate, or match a design, page, or site \(from an image, a URL, or a description\)/)
 })
 
 test('image messages use prompt admission and retain their images, identity and chat context', async (t) => {
