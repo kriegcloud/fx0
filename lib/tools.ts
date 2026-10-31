@@ -1,5 +1,9 @@
 // @ts-expect-error Node strip-types tests require the source extension.
 import { referenceTools } from './reference-tools.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { workstationEnabled, workstationTools } from './workstation-tools.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { workstationMcpTools } from './workstation-mcp.ts'
 import type { FxHostTool, FxToolResult } from 'libfx'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { fetchPublicText } from './public-fetch.ts'
@@ -77,7 +81,7 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
   const publishDesign: FxHostTool = {
     name: 'publish_design',
     description:
-      'Publish one complete self-contained HTML document as the authoritative design. Inline CSS and JavaScript, Canvas, animation, event handlers, and user-click popout windows are supported inside the secure preview iframe. For popouts, call await beep.openPopout(html, {title: "Panel", width: 900, height: 650}) directly in a click handler and catch popup-blocking errors. Pass inline self-contained HTML; the returned handle has focus() and close(). Use this helper because native window.open is blocked by the credentialless preview. Use once for the first design or for a broad rewrite; keep normal drafts under 12 KiB. It must include doctype, html, head, and body; keep scripts inline; use only accepted data: assets, local fragments, or <a href="https://..."> links (they open in a new tab); and do not add HTML comments, external assets, forms, navigation of the preview or parent page, or nested frames. Self-contained beep.openPopout windows are allowed. Use edit_design instead for localized follow-ups.',
+      'Publish one complete self-contained HTML document as the authoritative design. Inline CSS and JavaScript, Canvas, animation, event handlers, and user-click popout windows are supported inside the secure preview iframe. For popouts, call await beep.openPopout(html, {title: "Panel", width: 900, height: 650}) directly in a click handler and catch popup-blocking errors. Pass inline self-contained HTML; the returned handle has focus() and close(). Use this helper because native window.open is blocked by the credentialless preview. Publish a complete initial design under about 12 KiB, then finish large designs with separate edit_design calls. Keep broad rewrites bounded too; the final artifact can grow across calls. It must include doctype, html, head, and body; keep scripts inline; use only accepted data: assets, local fragments, or <a href="https://..."> links (they open in a new tab); and do not add HTML comments, external assets, forms, navigation of the preview or parent page, or nested frames. Self-contained beep.openPopout windows are allowed. Use edit_design instead for localized follow-ups.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -95,7 +99,7 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
   const editDesign: FxHostTool = {
     name: 'edit_design',
     description:
-      'Apply one or more exact replacements to the current design in a single call, without republishing the whole document. Put every change a request needs into one call: they apply in order and publish once, atomically, as one version. Each old_string must match exactly once in the document as it stands after the edits before it.',
+      'Apply one or more exact replacements to the current design in a single call, without republishing the whole document. Group related small changes; keep each call under about 12 KiB and split larger work across separate calls. Edits in each call apply in order and publish once, atomically, as one revision. Check each result before the next call. Each old_string must match exactly once in the document as it stands after the edits before it.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -278,12 +282,15 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
     },
   }
 
-  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, screenshotDesign, webFetch, askUser, readToolResult, capabilitySearch, ...referenceTools(host)]
+  const tools: FxHostTool[] = [readDesign, publishDesign, editDesign, screenshotDesign, webFetch, askUser, readToolResult, capabilitySearch,
+    ...(workstationEnabled() ? [...workstationTools(host), ...workstationMcpTools(host)] : referenceTools(host))]
 
   if (allowSubagent) {
     tools.push({
       name: 'subagent',
-      description: 'Delegate a focused design or research subtask to a nested agent with the same design and configured read-only reference tools. No shell or filesystem writes.',
+      description: workstationEnabled()
+        ? 'Delegate a focused subtask to a nested agent with the same workstation shell, filesystem, network and design tools. Give it a clear scope and preserve unrelated work.'
+        : 'Delegate a focused design or research subtask to a nested agent with the same design and configured read-only reference tools. No shell or filesystem writes.',
       inputSchema: {
         type: 'object',
         properties: { task: { type: 'string', description: 'Complete instructions for the subagent.' } },

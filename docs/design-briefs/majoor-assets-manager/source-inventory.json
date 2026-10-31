@@ -1,0 +1,3095 @@
+{
+  "source_commit": "1830902ce8084bc13b39b8934eb417575b3ba86f",
+  "method": "Static literal route decorators and setting id definitions; dynamic registrations/templates may expand at runtime. Counts are evidence coverage, not number of product features.",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/mjr/am/user-guide",
+      "source": "mjr_am_backend/routes/handlers/asset_docs.py",
+      "line": 103,
+      "capability_ids": [
+        "SET07",
+        "OPS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/docs/{filename}",
+      "source": "mjr_am_backend/routes/handlers/asset_docs.py",
+      "line": 115,
+      "capability_ids": [
+        "SET07",
+        "OPS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/routes",
+      "source": "mjr_am_backend/routes/handlers/asset_docs.py",
+      "line": 139,
+      "capability_ids": [
+        "SET07",
+        "OPS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/retry-services",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 233,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/asset/rating",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 247,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/asset/tags",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 267,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/open-in-folder",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 287,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/tags",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 311,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/asset/delete",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 325,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/asset/rename",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 358,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/assets/delete",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 395,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/assets/rename",
+      "source": "mjr_am_backend/routes/handlers/assets_impl.py",
+      "line": 423,
+      "capability_ids": [
+        "ORG01",
+        "ORG02",
+        "FIL04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/audit",
+      "source": "mjr_am_backend/routes/handlers/audit.py",
+      "line": 34,
+      "capability_ids": [
+        "OPS06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/batch-zip",
+      "source": "mjr_am_backend/routes/handlers/batch_zip.py",
+      "line": 402,
+      "capability_ids": [
+        "FIL06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/batch-zip/{token}",
+      "source": "mjr_am_backend/routes/handlers/batch_zip.py",
+      "line": 767,
+      "capability_ids": [
+        "FIL06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/date-histogram",
+      "source": "mjr_am_backend/routes/handlers/calendar.py",
+      "line": 36,
+      "capability_ids": [
+        "SEA04"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/collect-files",
+      "source": "mjr_am_backend/routes/handlers/collect_files.py",
+      "line": 57,
+      "capability_ids": [
+        "FIL07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/collections",
+      "source": "mjr_am_backend/routes/handlers/collections.py",
+      "line": 114,
+      "capability_ids": [
+        "ORG03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/collections",
+      "source": "mjr_am_backend/routes/handlers/collections.py",
+      "line": 125,
+      "capability_ids": [
+        "ORG03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/sys/browse-folder",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 388,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/custom-roots",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 454,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/custom-roots",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 459,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/custom-roots/remove",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 484,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/custom-view",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 532,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/folder-info",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 669,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/browser/folder-op",
+      "source": "mjr_am_backend/routes/handlers/custom_roots.py",
+      "line": 734,
+      "capability_ids": [
+        "LIB02",
+        "LIB03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/optimize",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 508,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/force-delete",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 554,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/cleanup-case-duplicates",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 849,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/backfill-job-ids-by-prefix",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 947,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/backfill-missing-vectors",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 1024,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/db/backfill-missing-vectors/status",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 1184,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/db/backups",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 1197,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/backup-save",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 1207,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/db/backup-restore",
+      "source": "mjr_am_backend/routes/handlers/db_maintenance.py",
+      "line": 1265,
+      "capability_ids": [
+        "OPS03",
+        "OPS04",
+        "AI02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/duplicates/analyze",
+      "source": "mjr_am_backend/routes/handlers/duplicates.py",
+      "line": 126,
+      "capability_ids": [
+        "ORG06",
+        "OPS05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/duplicates/status",
+      "source": "mjr_am_backend/routes/handlers/duplicates.py",
+      "line": 158,
+      "capability_ids": [
+        "ORG06",
+        "OPS05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/duplicates/alerts",
+      "source": "mjr_am_backend/routes/handlers/duplicates.py",
+      "line": 170,
+      "capability_ids": [
+        "ORG06",
+        "OPS05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/duplicates/merge-tags",
+      "source": "mjr_am_backend/routes/handlers/duplicates.py",
+      "line": 198,
+      "capability_ids": [
+        "ORG06",
+        "OPS05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/health",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 479,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/health/counters",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 513,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/health/db",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 580,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/status",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 651,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/runtime/execution",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 672,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/runtime/execution",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 676,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/config",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 715,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/input-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 748,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/input-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 765,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/output-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 839,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/output-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 856,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/index-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 933,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/index-directory",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 943,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/probe-backend",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1000,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/metadata-fallback",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1044,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/metadata-fallback",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1057,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/vector-search",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1105,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/vector-search",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1134,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/vector-search/unload",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1248,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/execution-grouping",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1272,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/execution-grouping",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1285,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/browser-show-folders",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1333,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/browser-show-folders",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1346,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/huggingface",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1377,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/huggingface",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1390,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/ai-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1438,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/ai-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1451,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/route-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1499,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/route-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1512,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/startup-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1560,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/startup-logging",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1573,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/ltxav-rgb-fallback",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1621,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/ltxav-rgb-fallback",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1634,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/jxl",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1683,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/jxl",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1694,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/workflow-roots",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1721,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/workflow-roots",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1738,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/settings/security",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1794,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/security",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1807,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/security/rotate-token",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1870,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/settings/security/bootstrap-token",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 1938,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/tools/status",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 2059,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/roots",
+      "source": "mjr_am_backend/routes/handlers/health.py",
+      "line": 2068,
+      "capability_ids": [
+        "OPS07",
+        "SET03",
+        "SET05",
+        "SET06",
+        "SET08",
+        "AI01",
+        "AI06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/search/hybrid",
+      "source": "mjr_am_backend/routes/handlers/hybrid_search.py",
+      "line": 336,
+      "capability_ids": [
+        "SEA06"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/integration/send-from-node",
+      "source": "mjr_am_backend/routes/handlers/integration.py",
+      "line": 75,
+      "capability_ids": [
+        "EXT02",
+        "LIV03"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/metadata",
+      "source": "mjr_am_backend/routes/handlers/metadata.py",
+      "line": 34,
+      "capability_ids": [
+        "INS01",
+        "INS02",
+        "INS03",
+        "INS04",
+        "INS05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/metadata/catalog",
+      "source": "mjr_am_backend/routes/handlers/metadata_catalog.py",
+      "line": 21,
+      "capability_ids": [
+        "SEA01",
+        "INS01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/metadata/keys",
+      "source": "mjr_am_backend/routes/handlers/metadata_catalog.py",
+      "line": 25,
+      "capability_ids": [
+        "SEA01",
+        "INS01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/metadata/parser-version",
+      "source": "mjr_am_backend/routes/handlers/metadata_catalog.py",
+      "line": 45,
+      "capability_ids": [
+        "SEA01",
+        "INS01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/metadata/backfill-parser-version",
+      "source": "mjr_am_backend/routes/handlers/metadata_catalog.py",
+      "line": 49,
+      "capability_ids": [
+        "SEA01",
+        "INS01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/metadata/backfill-parser-version",
+      "source": "mjr_am_backend/routes/handlers/metadata_catalog.py",
+      "line": 64,
+      "capability_ids": [
+        "SEA01",
+        "INS01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/plugins/list",
+      "source": "mjr_am_backend/routes/handlers/plugins.py",
+      "line": 41,
+      "capability_ids": [
+        "EXT01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/plugins/{name}/enable",
+      "source": "mjr_am_backend/routes/handlers/plugins.py",
+      "line": 59,
+      "capability_ids": [
+        "EXT01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/plugins/reload",
+      "source": "mjr_am_backend/routes/handlers/plugins.py",
+      "line": 84,
+      "capability_ids": [
+        "EXT01"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/scan",
+      "source": "mjr_am_backend/routes/handlers/scan.py",
+      "line": 292,
+      "capability_ids": [
+        "OPS01",
+        "INS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/index-files",
+      "source": "mjr_am_backend/routes/handlers/scan.py",
+      "line": 499,
+      "capability_ids": [
+        "OPS01",
+        "INS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/index/reset",
+      "source": "mjr_am_backend/routes/handlers/scan.py",
+      "line": 1278,
+      "capability_ids": [
+        "OPS01",
+        "INS07"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stage-to-input",
+      "source": "mjr_am_backend/routes/handlers/scan_staging.py",
+      "line": 89,
+      "capability_ids": [
+        "FIL02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/upload_input",
+      "source": "mjr_am_backend/routes/handlers/scan_upload.py",
+      "line": 55,
+      "capability_ids": [
+        "FIL02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/watcher/status",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 254,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/watcher/flush",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 268,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/watcher/toggle",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 311,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/watcher/settings",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 357,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/watcher/settings",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 379,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/watcher/scope",
+      "source": "mjr_am_backend/routes/handlers/scan_watcher.py",
+      "line": 448,
+      "capability_ids": [
+        "OPS02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/stacks",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 78,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/stacks/by-job/{job_id}",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 98,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/stacks/by-node/{source_node_id}/members",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 111,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/stacks/{stack_id}",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 133,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/stacks/{stack_id}/members",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 150,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stacks/{stack_id}/cover",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 171,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stacks/{stack_id}/rename",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 194,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stacks/dissolve",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 214,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stacks/merge",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 232,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/stacks/auto-stack",
+      "source": "mjr_am_backend/routes/handlers/stacks.py",
+      "line": 257,
+      "capability_ids": [
+        "ORG07",
+        "ORG08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/thumbnail",
+      "source": "mjr_am_backend/routes/handlers/thumbnails.py",
+      "line": 16,
+      "capability_ids": [
+        "LIB09"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vector/search",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 590,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vector/similar/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 669,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vector/alignment/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 745,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/vector/index/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 780,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/vector/caption/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 835,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/vector/enhanced-prompt/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 836,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr-am/assets/enhance-prompt",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 883,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr-am/assets/caption",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 884,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vector/stats",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 931,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vector/auto-tags/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 957,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/vector/suggest-collections",
+      "source": "mjr_am_backend/routes/handlers/vector_search.py",
+      "line": 1001,
+      "capability_ids": [
+        "SEA06",
+        "SEA07",
+        "AI01",
+        "AI02",
+        "AI03",
+        "AI04",
+        "AI05",
+        "ORG04",
+        "ORG05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/vendor/{path:.*}",
+      "source": "mjr_am_backend/routes/handlers/vendor.py",
+      "line": 71,
+      "capability_ids": [
+        "EXT02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions/majoor-assetsmanager/vendor/{path:.*}",
+      "source": "mjr_am_backend/routes/handlers/vendor.py",
+      "line": 75,
+      "capability_ids": [
+        "EXT02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/extensions/ComfyUI-Majoor-AssetsManager/vendor/{path:.*}",
+      "source": "mjr_am_backend/routes/handlers/vendor.py",
+      "line": 79,
+      "capability_ids": [
+        "EXT02"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/viewer/asset/{asset_id}",
+      "source": "mjr_am_backend/routes/handlers/viewer.py",
+      "line": 414,
+      "capability_ids": [
+        "MED01",
+        "MED02",
+        "MED04",
+        "MED05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/viewer/info",
+      "source": "mjr_am_backend/routes/handlers/viewer.py",
+      "line": 432,
+      "capability_ids": [
+        "MED01",
+        "MED02",
+        "MED04",
+        "MED05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/viewer/resource",
+      "source": "mjr_am_backend/routes/handlers/viewer.py",
+      "line": 464,
+      "capability_ids": [
+        "MED01",
+        "MED02",
+        "MED04",
+        "MED05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/view/by-hash",
+      "source": "mjr_am_backend/routes/handlers/viewer.py",
+      "line": 508,
+      "capability_ids": [
+        "MED01",
+        "MED02",
+        "MED04",
+        "MED05"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/content",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 224,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/validate",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 231,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/versions",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 238,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/diff",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 245,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/save",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 253,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/duplicate",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 294,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/move",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 315,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/delete",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 344,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/mark-loaded",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 364,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/favorite",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 384,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/tags",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 409,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/info",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 431,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/thumbnail-candidates",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 452,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/model-families",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 464,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/open-root",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 468,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "POST",
+      "path": "/mjr/am/workflows/thumbnail/set",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 493,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/thumbnail",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 519,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    },
+    {
+      "method": "GET",
+      "path": "/mjr/am/workflows/graph-map-thumbnail",
+      "source": "mjr_am_backend/routes/handlers/workflows.py",
+      "line": 545,
+      "capability_ids": [
+        "WF01",
+        "WF02",
+        "WF04",
+        "WF05",
+        "WF06",
+        "WF08"
+      ],
+      "mapping_level": "handler-family; inspect payload contract before wiring a specific action"
+    }
+  ],
+  "frontend_endpoint_constants": [
+    {
+      "name": "HEALTH",
+      "path": "/mjr/am/health",
+      "line": 46
+    },
+    {
+      "name": "HEALTH_COUNTERS",
+      "path": "/mjr/am/health/counters",
+      "line": 47
+    },
+    {
+      "name": "HEALTH_DB",
+      "path": "/mjr/am/health/db",
+      "line": 48
+    },
+    {
+      "name": "STATUS",
+      "path": "/mjr/am/status",
+      "line": 49
+    },
+    {
+      "name": "RUNTIME_EXECUTION",
+      "path": "/mjr/am/runtime/execution",
+      "line": 50
+    },
+    {
+      "name": "CONFIG",
+      "path": "/mjr/am/config",
+      "line": 51
+    },
+    {
+      "name": "VERSION",
+      "path": "/mjr/am/version",
+      "line": 52
+    },
+    {
+      "name": "SCAN",
+      "path": "/mjr/am/scan",
+      "line": 55
+    },
+    {
+      "name": "INDEX_FILES",
+      "path": "/mjr/am/index-files",
+      "line": 56
+    },
+    {
+      "name": "INDEX_RESET",
+      "path": "/mjr/am/index/reset",
+      "line": 57
+    },
+    {
+      "name": "DB_RESET",
+      "path": "/mjr/am/db/reset",
+      "line": 58
+    },
+    {
+      "name": "SEARCH",
+      "path": "/mjr/am/search",
+      "line": 59
+    },
+    {
+      "name": "LIST",
+      "path": "/mjr/am/list",
+      "line": 60
+    },
+    {
+      "name": "ROOTS",
+      "path": "/mjr/am/roots",
+      "line": 61
+    },
+    {
+      "name": "CUSTOM_ROOTS",
+      "path": "/mjr/am/custom-roots",
+      "line": 62
+    },
+    {
+      "name": "CUSTOM_ROOTS_REMOVE",
+      "path": "/mjr/am/custom-roots/remove",
+      "line": 63
+    },
+    {
+      "name": "BROWSER_FOLDER_OP",
+      "path": "/mjr/am/browser/folder-op",
+      "line": 64
+    },
+    {
+      "name": "BROWSE_FOLDER",
+      "path": "/mjr/sys/browse-folder",
+      "line": 65
+    },
+    {
+      "name": "FOLDER_INFO",
+      "path": "/mjr/am/folder-info",
+      "line": 66
+    },
+    {
+      "name": "METADATA",
+      "path": "/mjr/am/metadata",
+      "line": 69
+    },
+    {
+      "name": "METADATA_CATALOG",
+      "path": "/mjr/am/metadata/catalog",
+      "line": 70
+    },
+    {
+      "name": "METADATA_KEYS",
+      "path": "/mjr/am/metadata/keys",
+      "line": 71
+    },
+    {
+      "name": "METADATA_PARSER_VERSION",
+      "path": "/mjr/am/metadata/parser-version",
+      "line": 72
+    },
+    {
+      "name": "WORKFLOW_QUICK",
+      "path": "/mjr/am/workflow-quick",
+      "line": 73
+    },
+    {
+      "name": "RETRY_SERVICES",
+      "path": "/mjr/am/retry-services",
+      "line": 74
+    },
+    {
+      "name": "STAGE_TO_INPUT",
+      "path": "/mjr/am/stage-to-input",
+      "line": 75
+    },
+    {
+      "name": "OPEN_IN_FOLDER",
+      "path": "/mjr/am/open-in-folder",
+      "line": 76
+    },
+    {
+      "name": "COLLECT_FILES",
+      "path": "/mjr/am/collect-files",
+      "line": 77
+    },
+    {
+      "name": "TOOLS_STATUS",
+      "path": "/mjr/am/tools/status",
+      "line": 78
+    },
+    {
+      "name": "SETTINGS_OUTPUT_DIRECTORY",
+      "path": "/mjr/am/settings/output-directory",
+      "line": 79
+    },
+    {
+      "name": "SETTINGS_INPUT_DIRECTORY",
+      "path": "/mjr/am/settings/input-directory",
+      "line": 80
+    },
+    {
+      "name": "SETTINGS_INDEX_DIRECTORY",
+      "path": "/mjr/am/settings/index-directory",
+      "line": 81
+    },
+    {
+      "name": "SETTINGS_WORKFLOW_ROOTS",
+      "path": "/mjr/am/settings/workflow-roots",
+      "line": 82
+    },
+    {
+      "name": "SETTINGS_METADATA_FALLBACK",
+      "path": "/mjr/am/settings/metadata-fallback",
+      "line": 83
+    },
+    {
+      "name": "SETTINGS_VECTOR_SEARCH",
+      "path": "/mjr/am/settings/vector-search",
+      "line": 84
+    },
+    {
+      "name": "SETTINGS_VECTOR_SEARCH_UNLOAD",
+      "path": "/mjr/am/settings/vector-search/unload",
+      "line": 85
+    },
+    {
+      "name": "SETTINGS_EXECUTION_GROUPING",
+      "path": "/mjr/am/settings/execution-grouping",
+      "line": 86
+    },
+    {
+      "name": "SETTINGS_HUGGINGFACE",
+      "path": "/mjr/am/settings/huggingface",
+      "line": 87
+    },
+    {
+      "name": "SETTINGS_AI_LOGGING",
+      "path": "/mjr/am/settings/ai-logging",
+      "line": 88
+    },
+    {
+      "name": "SETTINGS_ROUTE_LOGGING",
+      "path": "/mjr/am/settings/route-logging",
+      "line": 89
+    },
+    {
+      "name": "SETTINGS_STARTUP_LOGGING",
+      "path": "/mjr/am/settings/startup-logging",
+      "line": 90
+    },
+    {
+      "name": "SETTINGS_LTXAV_RGB_FALLBACK",
+      "path": "/mjr/am/settings/ltxav-rgb-fallback",
+      "line": 91
+    },
+    {
+      "name": "SETTINGS_JXL",
+      "path": "/mjr/am/settings/jxl",
+      "line": 92
+    },
+    {
+      "name": "SETTINGS_BROWSER_SHOW_FOLDERS",
+      "path": "/mjr/am/settings/browser-show-folders",
+      "line": 93
+    },
+    {
+      "name": "VIEW",
+      "path": "/view",
+      "line": 96
+    },
+    {
+      "name": "CUSTOM_VIEW",
+      "path": "/mjr/am/custom-view",
+      "line": 99
+    },
+    {
+      "name": "VIEWER_INFO",
+      "path": "/mjr/am/viewer/info",
+      "line": 102
+    },
+    {
+      "name": "VIEWER_RESOURCE",
+      "path": "/mjr/am/viewer/resource",
+      "line": 103
+    },
+    {
+      "name": "THUMBNAIL",
+      "path": "/mjr/am/thumbnail",
+      "line": 104
+    },
+    {
+      "name": "UPLOAD_INPUT",
+      "path": "/mjr/am/upload_input",
+      "line": 107
+    },
+    {
+      "name": "DOWNLOAD",
+      "path": "/mjr/am/download",
+      "line": 110
+    },
+    {
+      "name": "DOWNLOAD_CLEAN",
+      "path": "/mjr/am/download-clean",
+      "line": 111
+    },
+    {
+      "name": "BATCH_ZIP_CREATE",
+      "path": "/mjr/am/batch-zip",
+      "line": 114
+    },
+    {
+      "name": "DATE_HISTOGRAM",
+      "path": "/mjr/am/date-histogram",
+      "line": 117
+    },
+    {
+      "name": "ASSET_DELETE",
+      "path": "/mjr/am/asset/delete",
+      "line": 120
+    },
+    {
+      "name": "ASSET_RENAME",
+      "path": "/mjr/am/asset/rename",
+      "line": 121
+    },
+    {
+      "name": "WATCHER_STATUS",
+      "path": "/mjr/am/watcher/status",
+      "line": 124
+    },
+    {
+      "name": "WATCHER_TOGGLE",
+      "path": "/mjr/am/watcher/toggle",
+      "line": 125
+    },
+    {
+      "name": "WATCHER_SCOPE",
+      "path": "/mjr/am/watcher/scope",
+      "line": 126
+    },
+    {
+      "name": "WATCHER_SETTINGS",
+      "path": "/mjr/am/watcher/settings",
+      "line": 127
+    },
+    {
+      "name": "COLLECTIONS",
+      "path": "/mjr/am/collections",
+      "line": 130
+    },
+    {
+      "name": "STACKS",
+      "path": "/mjr/am/stacks",
+      "line": 133
+    },
+    {
+      "name": "STACKS_MERGE",
+      "path": "/mjr/am/stacks/merge",
+      "line": 134
+    },
+    {
+      "name": "STACKS_DISSOLVE",
+      "path": "/mjr/am/stacks/dissolve",
+      "line": 135
+    },
+    {
+      "name": "STACKS_AUTO_STACK",
+      "path": "/mjr/am/stacks/auto-stack",
+      "line": 136
+    },
+    {
+      "name": "DUPLICATES_ALERTS",
+      "path": "/mjr/am/duplicates/alerts",
+      "line": 139
+    },
+    {
+      "name": "DUPLICATES_ANALYZE",
+      "path": "/mjr/am/duplicates/analyze",
+      "line": 140
+    },
+    {
+      "name": "DUPLICATES_MERGE_TAGS",
+      "path": "/mjr/am/duplicates/merge-tags",
+      "line": 141
+    },
+    {
+      "name": "DB_BACKUPS",
+      "path": "/mjr/am/db/backups",
+      "line": 144
+    },
+    {
+      "name": "DB_BACKUP_SAVE",
+      "path": "/mjr/am/db/backup-save",
+      "line": 145
+    },
+    {
+      "name": "DB_BACKUP_RESTORE",
+      "path": "/mjr/am/db/backup-restore",
+      "line": 146
+    },
+    {
+      "name": "VECTOR_SEARCH",
+      "path": "/mjr/am/vector/search",
+      "line": 149
+    },
+    {
+      "name": "VECTOR_SIMILAR",
+      "path": "/mjr/am/vector/similar",
+      "line": 150
+    },
+    {
+      "name": "VECTOR_ALIGNMENT",
+      "path": "/mjr/am/vector/alignment",
+      "line": 151
+    },
+    {
+      "name": "VECTOR_AUTO_TAGS",
+      "path": "/mjr/am/vector/auto-tags",
+      "line": 152
+    },
+    {
+      "name": "VECTOR_CAPTION",
+      "path": "/mjr/am/vector/caption",
+      "line": 153
+    },
+    {
+      "name": "VECTOR_ENHANCED_PROMPT",
+      "path": "/mjr/am/vector/enhanced-prompt",
+      "line": 155
+    },
+    {
+      "name": "VECTOR_INDEX",
+      "path": "/mjr/am/vector/index",
+      "line": 156
+    },
+    {
+      "name": "VECTOR_STATS",
+      "path": "/mjr/am/vector/stats",
+      "line": 157
+    },
+    {
+      "name": "VECTOR_SUGGEST_COLLECTIONS",
+      "path": "/mjr/am/vector/suggest-collections",
+      "line": 158
+    },
+    {
+      "name": "VECTOR_BACKFILL",
+      "path": "/mjr/am/db/backfill-missing-vectors",
+      "line": 159
+    },
+    {
+      "name": "VECTOR_BACKFILL_STATUS",
+      "path": "/mjr/am/db/backfill-missing-vectors/status",
+      "line": 160
+    },
+    {
+      "name": "HYBRID_SEARCH",
+      "path": "/mjr/am/search/hybrid",
+      "line": 163
+    },
+    {
+      "name": "AUDIT",
+      "path": "/mjr/am/audit",
+      "line": 166
+    },
+    {
+      "name": "WORKFLOWS_CONTENT",
+      "path": "/mjr/am/workflows/content",
+      "line": 169
+    },
+    {
+      "name": "WORKFLOWS_VALIDATE",
+      "path": "/mjr/am/workflows/validate",
+      "line": 170
+    },
+    {
+      "name": "WORKFLOWS_VERSIONS",
+      "path": "/mjr/am/workflows/versions",
+      "line": 171
+    },
+    {
+      "name": "WORKFLOWS_DIFF",
+      "path": "/mjr/am/workflows/diff",
+      "line": 172
+    },
+    {
+      "name": "WORKFLOWS_SAVE",
+      "path": "/mjr/am/workflows/save",
+      "line": 173
+    },
+    {
+      "name": "WORKFLOWS_DUPLICATE",
+      "path": "/mjr/am/workflows/duplicate",
+      "line": 174
+    },
+    {
+      "name": "WORKFLOWS_MOVE",
+      "path": "/mjr/am/workflows/move",
+      "line": 175
+    },
+    {
+      "name": "WORKFLOWS_DELETE",
+      "path": "/mjr/am/workflows/delete",
+      "line": 176
+    },
+    {
+      "name": "WORKFLOWS_MARK_LOADED",
+      "path": "/mjr/am/workflows/mark-loaded",
+      "line": 177
+    },
+    {
+      "name": "WORKFLOWS_FAVORITE",
+      "path": "/mjr/am/workflows/favorite",
+      "line": 178
+    },
+    {
+      "name": "WORKFLOWS_INFO",
+      "path": "/mjr/am/workflows/info",
+      "line": 179
+    },
+    {
+      "name": "WORKFLOWS_THUMBNAIL_CANDIDATES",
+      "path": "/mjr/am/workflows/thumbnail-candidates",
+      "line": 180
+    },
+    {
+      "name": "WORKFLOWS_MODEL_FAMILIES",
+      "path": "/mjr/am/workflows/model-families",
+      "line": 181
+    },
+    {
+      "name": "WORKFLOWS_TAGS",
+      "path": "/mjr/am/workflows/tags",
+      "line": 182
+    },
+    {
+      "name": "WORKFLOWS_THUMBNAIL_SET",
+      "path": "/mjr/am/workflows/thumbnail/set",
+      "line": 183
+    },
+    {
+      "name": "WORKFLOWS_OPEN_ROOT",
+      "path": "/mjr/am/workflows/open-root",
+      "line": 184
+    }
+  ],
+  "setting_definitions": [
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Paths.OutputDirectory`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 64
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Paths.InputDirectory`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 172
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Paths.IndexDirectory`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 236
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Paths.WorkflowRoots`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 349
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Language`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 451
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.ProbeBackend.Mode`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 481
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.MetadataFallback.Image`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 506
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.MetadataFallback.Media`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 552
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Db.Timeout`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 627
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Db.MaxConnections`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 647
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Db.QueryTimeout`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 667
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Observability.Enabled`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 689
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Observability.RuntimeDashboardMode`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 705
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Observability.VerboseErrors`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 729
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Observability.VerboseRouteRegistrationLogs`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 745
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Observability.VerboseStartupLogs`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 797
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.HuggingFaceTokenVisible`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 894
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.HuggingFaceToken`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 912
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VerboseLogs`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 987
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorStats`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 1041
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorBackfillAction`,",
+      "source": "ui/app/settings/settingsAdvanced.ts",
+      "line": 1067
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.CardSize`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 27
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowInfo`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 45
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowFilename`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 63
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowDimensions`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 80
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowDate`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 97
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowGenTime`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 114
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowWorkflowDot`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 131
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowExtBadge`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 148
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowRatingBadge`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 165
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Feed.ShowTagsBadge`,",
+      "source": "ui/app/settings/settingsFeed.ts",
+      "line": 182
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Cards.ThumbSize`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 49
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Cards.CustomThumbSize`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 97
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowDetails`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 115
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowFilename`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 130
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowDate`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 145
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowDimensions`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 160
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowGenTime`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 175
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowHoverInfo`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 190
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowWorkflowDot`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 206
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowExtBadge`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 226
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowRatingBadge`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 241
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.ShowTagsBadge`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 256
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.StarColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 271
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.ImageColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 289
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.VideoColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 313
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.AudioColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 337
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.Model3dColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 361
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.DuplicateAlertColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 385
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.PageSize`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 413
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.WorkflowGroupBy`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 433
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.InfiniteScroll.Enabled`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 469
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Sidebar.Position`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 485
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Sidebar.ShowPreviewThumb`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 501
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Sidebar.AssetBadgeEnabled`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 516
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Sidebar.WidthPx`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 535
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.General.HideSiblings`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 558
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Grid.VideoAutoplayMode`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 573
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Cards.HoverColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 623
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Cards.SelectionColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 642
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.RatingColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 664
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Badges.TagColor`,",
+      "source": "ui/app/settings/settingsGrid.ts",
+      "line": 680
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.ExecutionGrouping.Enabled`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 33
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AutoScan.OnStartup`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 75
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Scan.FastMode`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 91
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Scan.JpegXL`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 107
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.RtHydrate.Concurrency`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 144
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.Enabled`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 207
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.DebounceDelay`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 238
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.DedupeWindow`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 275
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.MaxPending`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 312
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.MinSize`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 332
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Watcher.MaxSize`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 352
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.RatingTagsSync.Enabled`,",
+      "source": "ui/app/settings/settingsScanning.ts",
+      "line": 378
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorSearchEnabled`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 25
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorCaptionOnIndex`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 68
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorIndexOnScan`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 115
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorConcurrency`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 154
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorUnloadAfterUse`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 192
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.AI.VectorUnloadNow`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 231
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Search.MaxResults`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 262
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.EnvVars.Reference`,",
+      "source": "ui/app/settings/settingsSearch.ts",
+      "line": 288
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Safety.ConfirmDeletion`,",
+      "source": "ui/app/settings/settingsSecurity.ts",
+      "line": 155
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Security.${key}`,",
+      "source": "ui/app/settings/settingsSecurity.ts",
+      "line": 178
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Security.RemoteLanPreset`,",
+      "source": "ui/app/settings/settingsSecurity.ts",
+      "line": 224
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Security.ApiToken`,",
+      "source": "ui/app/settings/settingsSecurity.ts",
+      "line": 319
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.AllowPanAtZoom1`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 36
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.DisableWebGL`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 52
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.PauseDuringExecution`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 69
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.FloatingPauseDuringExecution`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 85
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Browser.ShowFolders`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 107
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvLiveDefault`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 141
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvPreviewDefault`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 159
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvTopbarButton`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 177
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvSidebarPosition`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 194
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvPreviewMethod`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 213
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.MfvKjPreviewOverrideEnabled`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 235
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.Viewer.LtxavRgbFallback`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 256
+    },
+    {
+      "definition": "id: `${SETTINGS_PREFIX}.WorkflowMinimap.${idKey}`,",
+      "source": "ui/app/settings/settingsViewer.ts",
+      "line": 313
+    }
+  ],
+  "settings_source_files": [
+    "ui/app/settings/MajoorSettingsDialog.ts",
+    "ui/app/settings/SettingsPanel.ts",
+    "ui/app/settings/SettingsStore.ts",
+    "ui/app/settings/settingsAdvanced.ts",
+    "ui/app/settings/settingsCore.ts",
+    "ui/app/settings/settingsFeed.ts",
+    "ui/app/settings/settingsGrid.ts",
+    "ui/app/settings/settingsRuntime.ts",
+    "ui/app/settings/settingsScanning.ts",
+    "ui/app/settings/settingsSearch.ts",
+    "ui/app/settings/settingsSecurity.ts",
+    "ui/app/settings/settingsUtils.ts",
+    "ui/app/settings/settingsViewer.ts"
+  ],
+  "vue_components": [
+    "ui/vue/components/common/AddToCollectionMenu.vue",
+    "ui/vue/components/common/ContextMenuPortal.vue",
+    "ui/vue/components/common/GenTimeBadge.vue",
+    "ui/vue/components/common/RatingBadge.vue",
+    "ui/vue/components/common/RatingEditor.vue",
+    "ui/vue/components/common/TagsBadge.vue",
+    "ui/vue/components/common/TagsEditor.vue",
+    "ui/vue/components/grid/AssetCardInner.vue",
+    "ui/vue/components/grid/AssetsGrid.vue",
+    "ui/vue/components/grid/FolderCard.vue",
+    "ui/vue/components/grid/GridContextMenu.vue",
+    "ui/vue/components/grid/VirtualAssetGridHost.vue",
+    "ui/vue/components/panel/CollectionsPopover.vue",
+    "ui/vue/components/panel/CustomRootsPopover.vue",
+    "ui/vue/components/panel/FilterPopover.vue",
+    "ui/vue/components/panel/HeaderSection.vue",
+    "ui/vue/components/panel/MessagePopover.vue",
+    "ui/vue/components/panel/PinnedFoldersPopover.vue",
+    "ui/vue/components/panel/SearchBar.vue",
+    "ui/vue/components/panel/SidebarSection.vue",
+    "ui/vue/components/panel/SimilarSearchPopover.vue",
+    "ui/vue/components/panel/SortPopover.vue",
+    "ui/vue/components/panel/SummaryBarSection.vue",
+    "ui/vue/components/panel/sidebar/AssetSidebarContent.vue",
+    "ui/vue/components/panel/sidebar/GenerationInputThumb.vue",
+    "ui/vue/components/panel/sidebar/SidebarFileInfoSection.vue",
+    "ui/vue/components/panel/sidebar/SidebarFolderSection.vue",
+    "ui/vue/components/panel/sidebar/SidebarGenerationSection.vue",
+    "ui/vue/components/panel/sidebar/SidebarHeaderSection.vue",
+    "ui/vue/components/panel/sidebar/SidebarPreviewSection.vue",
+    "ui/vue/components/panel/sidebar/SidebarWorkflowSection.vue",
+    "ui/vue/components/status/StatusSection.vue",
+    "ui/vue/components/viewer/FloatingViewerHost.vue",
+    "ui/vue/components/viewer/ViewerContextMenu.vue",
+    "ui/vue/components/viewer/ViewerContextMenuPortal.vue",
+    "ui/vue/components/viewer/ViewerMetadataBlock.vue",
+    "ui/vue/components/viewer/ViewerOverlayHost.vue",
+    "ui/vue/components/viewer/ViewerPortal.vue",
+    "ui/vue/components/workflows/WorkflowInfoDialog.vue",
+    "ui/vue/components/workflows/WorkflowPickerDialog.vue",
+    "ui/vue/components/workflows/WorkflowSaveInfoDialog.vue"
+  ],
+  "coverage_note": "Every literal route is assigned to capability families; not every endpoint needs a visible page. Settings and component inventories are technical coverage, not claims of a separate product feature per record."
+}

@@ -1,0 +1,18 @@
+{
+  "canonical_directory": "/home/elpresidank/ai/reports/majoor-product-map-2026-10-29",
+  "delivery_directory": "/home/elpresidank/YeeBois/workstation-apps/fx0/docs/design-briefs/majoor-assets-manager",
+  "source_commit": "1830902ce8084bc13b39b8934eb417575b3ba86f",
+  "files": {
+    "01-capability-map.md": "86417fd9bfcc280537b24faf822e702cc21a8ba4f7c0a4109e00771141f40afe",
+    "02-experience-architecture.md": "522bcfa3f46345027a2ad24ade505d049c31dd73ad61ef7930a3079f5ead59b8",
+    "03-component-contracts.md": "8a5ce43bc7858d976bf864b54c98ab7c7e2061642196316e619c6e24b0632a18",
+    "04-kimi-fx0-prompt.md": "9ad753c560091c54aefc98f9911a62c38fd8ca490316326b0db1f814c40949d2",
+    "05-acceptance-and-implementation.md": "f8abac6fce589e4db4f6ed16e708cf00e302e6c2b14b5a6d10940dcc71e81e8c",
+    "README.md": "083538e3979aa43251cd2de0b09a4677a9621f063334245f3f26217c5edbcf4c",
+    "capability-map.json": "107bd3656f4cc7651957f3ca6d751ec9c51deff8febd87e9c31846a2ff83a70a",
+    "fixture-data.json": "cc65e8bf4e6da9781e6a70e6fb48cb9307f9aaf3a5609fc6f51435ebdc4a6096",
+    "index.html": "541b308043ba014d8e996ab653983b33035134dc191ea719b5614f63a44c06d0",
+    "source-inventory.json": "3a2477111428be572d909bb18144e6c57e0c37e51d01fd508b3d3ffdc5ec7973",
+    "validation.json": "562488d67c163ca8829c8506cf7e29388fa713c4407e51857a0ef35adeee1f64"
+  }
+}

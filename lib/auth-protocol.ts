@@ -3,6 +3,8 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose'
 import { equalSecret, redactSecrets } from './auth-crypto.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { AuthError } from './accounts.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { localMode } from './local-mode.ts'
 
 // Requests can run for 800s. Leave 100s for dispatch/clock overhead so a token
 // accepted by the Gateway transport can cover an entire request.
@@ -46,8 +48,11 @@ export const FLOW_COOKIE_OPTIONS = {
 function appOrigin(appUrl = process.env.APP_URL): string {
   if (!appUrl) throw new Error('APP_URL is required')
   const url = new URL(appUrl)
+  // Production workstation mode deliberately serves loopback HTTP. localMode()
+  // rejects remote hosts and Vercel; an override must still match its exact origin.
   if (url.username || url.password || (url.protocol !== 'https:' &&
-      !(process.env.NODE_ENV !== 'production' && url.protocol === 'http:'))) {
+      !(url.protocol === 'http:' && (process.env.NODE_ENV !== 'production' ||
+        (localMode() && url.origin === new URL(process.env.APP_URL!).origin))))) {
     throw new Error('APP_URL must be a trusted HTTP(S) origin')
   }
   return url.origin

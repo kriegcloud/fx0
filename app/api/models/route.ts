@@ -1,4 +1,5 @@
 import { localMode, proxyBaseUrl } from '../../../lib/local-mode'
+import { isLocalTextModel } from '../../../lib/local-models'
 import { connection } from 'next/server.js'
 import { featuredModels } from '../../../lib/featured-models'
 import { DEFAULT_MODEL } from '../../../lib/session'
@@ -46,7 +47,7 @@ export async function GET() {
     const entries: { id: string; released?: number }[] = []
     for (const model of payload.data ?? []) {
       if (typeof model.id !== 'string' || (typeof model.type === 'string' && model.type.toLowerCase() !== 'language')) continue
-      if (localMode() && (!/^(gpt-|claude-|grok-)/.test(model.id) || /image|video|tts|voice/.test(model.id))) continue
+      if (localMode() && !isLocalTextModel(model.id)) continue
       if (localMode() && model.id.startsWith('gpt-')) catalog.efforts[model.id] = ['low', 'medium', 'high']
       entries.push({ id: model.id, released: typeof model.released === 'number' && Number.isFinite(model.released) ? model.released : undefined })
       const values = model.reasoning_options?.find((option) => option.type === 'effort')?.values
@@ -59,7 +60,7 @@ export async function GET() {
       .sort((a, b) => (b.released ?? 0) - (a.released ?? 0) || a.id.localeCompare(b.id))
       .map(({ id }) => id))]
     catalog.fast = [...new Set(catalog.fast)]
-    catalog.featured = localMode() ? ['gpt-6.1-sol', 'claude-opus-5-5', 'claude-sonnet-5-5', 'grok-4.7'].filter(id => catalog.models.includes(id)) : featuredModels(entries)
+    catalog.featured = localMode() ? ['gpt-6.1-sol', 'claude-opus-5-5', 'claude-sonnet-5-5', 'grok-4.7', 'kimi-k3.1-pro'].filter(id => catalog.models.includes(id)) : featuredModels(entries)
     cache = { at: Date.now(), catalog }
     return Response.json({ ...catalog, defaultModel }, SHARED)
   } catch {

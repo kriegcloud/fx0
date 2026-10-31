@@ -15,7 +15,7 @@ const fakes = {
   './turn-budget': dataUrl(forward('budget', ['turnBudget'])),
 }
 registerHooks({ resolve(specifier, context, next) {
-  if (context.parentURL?.includes('/lib/')) {
+  if (context.parentURL?.startsWith(new URL('../lib/', import.meta.url).href)) {
     if (fakes[specifier]) return { url: fakes[specifier], shortCircuit: true }
     if (specifier.startsWith('./') && !/\.[cm]?[jt]s$/.test(specifier)) return next(`${specifier}.ts`, context)
   }
@@ -92,6 +92,32 @@ test('screenshots in one response take turns: a chat has one capture open at a t
   const screenshot = agentOptions.tools.find((tool) => tool.name === 'screenshot_design')
   assert.equal(screenshot.idempotent, true)
   assert.equal(screenshot.writes, true, 'a tool that writes never runs beside another call')
+})
+
+test('Kimi transport preserves exact IDs, streaming tools, cancellation and provider errors without GPT effort', async (t) => {
+  const previous = { ...process.env }
+  t.after(() => { process.env = previous; turnSteps.clear() })
+  Object.assign(process.env, { FX0_LOCAL: '1', APP_URL: 'http://127.0.0.1:3000', FX0_EFFORT: 'medium' })
+  delete process.env.VERCEL
+  const controller = new AbortController()
+  const body = { model: 'kimi-k3.1-pro', stream: true, messages: [{ role: 'user', content: 'synthetic' }], tools: [{ type: 'function', function: { name: 'publish_design', parameters: { type: 'object' } } }] }
+  const stream = new Response('data: {"choices":[{"delta":{"content":"OK"}}]}\n\ndata: [DONE]\n\n', { headers: { 'content-type': 'text/event-stream' } })
+  const network = t.mock.method(globalThis, 'fetch', async (url, init) => {
+    assert.equal(String(url), 'http://127.0.0.1:8317/v1/chat/completions')
+    assert.deepEqual(JSON.parse(init.body), body)
+    assert.equal(init.signal, controller.signal)
+    return stream
+  })
+  const request = () => agentFetch('http://127.0.0.1:8317/v1/chat/completions', { method: 'POST', body: JSON.stringify(body), signal: controller.signal })
+  assert.equal(await request(), stream, 'the response is streamed without buffering or rewriting')
+  assert.match(await stream.text(), /\[DONE\]/)
+  network.mock.mockImplementation(async () => new Response('{"error":{"message":"model unavailable"}}', { status: 403 }))
+  const failed = await request()
+  assert.equal(failed.status, 403)
+  assert.equal((await failed.json()).error.message, 'model unavailable')
+  network.mock.mockImplementation(async (_url, init) => { init.signal.throwIfAborted() })
+  controller.abort()
+  await assert.rejects(request(), { name: 'AbortError' })
 })
 
 test('a recovered sponsored chat uses its recorded trial funding instead of requiring a customer card', async (t) => {

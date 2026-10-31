@@ -14,6 +14,62 @@ Install dependencies with `bun install`, then run:
 bun run dev:local
 ```
 
+To build and run the production server locally with the same CLIProxyAPI and
+local data setup, stop the development launcher, then run:
+
+```sh
+bun run build
+bun run start:local
+```
+
+Both launchers use the same `.local/` data and cannot run against it at the same
+time. `start:local` serves the compiled build with `next start` on loopback.
+
+### Response limits and large designs
+
+Direct Kimi routes declare their per-model context and output limits to libfx,
+using the installed CLIProxyAPI 8.0.47 catalog. K2/K2 Thinking/K2.5 request up to
+32,768 output tokens; the remaining listed Kimi routes request up to 65,536.
+This makes the outgoing `max_tokens` explicit instead of relying on an upstream
+default. Catalog limits do not establish subscription access or guarantee that
+every request will fit; reasoning and generated tool arguments consume output.
+
+Large designs should publish a complete initial preview and grow through bounded
+`edit_design` calls (about 12 KiB per call), retaining the existing 512 KiB artifact
+limit. Truncated responses are shown as failures with a **Continue in smaller
+steps** action. It sends a normal continuation in the same conversation; it does
+not automatically retry tools or discard the last published preview. Historical
+`OutputTruncated` errors also receive the explanation and recovery action.
+
+After `bun run build`, `bun run test:output:browser` tests this flow in headless
+Chrome with a synthetic streaming provider, a separate local app process, and
+temporary data. It checks preview preservation, recovery after reload, incremental
+edits, and the rendered result. Set `CHROME_PATH` if Chrome is not at
+`/usr/bin/google-chrome-stable`, or `FX0_TEST_APP_ROOT` to test another built
+checkout. This test makes no upstream inference requests.
+
+### KDE desktop app
+
+On this workstation, run `bun run install:desktop` once to add **fx0** to KDE
+application search and the desktop. Clicking it builds the current local checkout,
+starts the production server, waits for readiness, and opens Chrome in a standalone
+app window with a dedicated fx0 browser profile. Search for **fx0**, **Beep**, or
+**Kimi**. No browser extension, root access, or remote deployment is needed.
+
+Repeated clicks during a build are coalesced. If a chat is generating, the launcher
+opens the current app and skips rebuilding to preserve the turn. A failed build or
+server readiness check restores the previous build when available. KDE notifications
+show progress and failures. This builds local files; it does not pull or install updates.
+
+The server runs as the on-demand user service `fx0-local.service`, retains `.local/`
+chat data, and stays running after the app window closes. It does not start at login.
+Stop it with `systemctl --user stop fx0-local.service`. The desktop service uses
+the launcher's normal `FX0_REFERENCE_ROOTS` configuration, including `.env.local`
+overrides; it does not retain the synthetic validation run's empty-root override.
+Its logs are `~/.local/state/fx0/desktop.log` and `server.log`.
+The browser profile lives in `~/.local/share/fx0/browser`; CLIProxyAPI credentials
+remain server-side. Re-run the installer after moving the checkout or Node runtime.
+
 Open **http://127.0.0.1:3000**. This explicit, single-user local mode uses your
 existing CLIProxyAPI subscriptions without Vercel sign-in, Neon, or Upstash.
 `redis-server` (Valkey is compatible) must be on PATH. The launcher checks the
@@ -21,18 +77,44 @@ proxy before starting the app and binds Next.js and the Redis HTTP adapter to
 loopback. Keep using the `127.0.0.1` URL, including its port.
 
 The default proxy is `http://127.0.0.1:8317/v1`. The launcher reads its client
-API key from `~/.cli-proxy-api/config.yaml` in memory; it never prints the key
-or puts it into browser code. CLIProxyAPI must already be running and signed
+API key from `~/.cli-proxy-api/client-token` in memory; it never prints the key
+or puts it into browser code. If that default token file is absent, it uses the
+legacy `~/.cli-proxy-api/config.yaml` `api-keys` list. Explicit key, token-file,
+and config overrides remain server-only. CLIProxyAPI must already be running and signed
 into the subscriptions you want to use. Its existing service and configuration
 are managed separately from fx0.
 
 New chats default to **gpt-6.1-sol with medium reasoning**. The picker lists the
-proxy's Claude, GPT, and Grok text models and excludes image, video, and speech
-models. GPT reasoning choices are sent as OpenAI `reasoning_effort`; libfx's
+proxy's Claude, GPT, Grok, and supported direct Kimi language models and excludes dedicated image, video, and speech
+generation models. GPT reasoning choices are sent as OpenAI `reasoning_effort`; libfx's
 custom provider does not advertise them itself. Fast mode and Gateway's
 provider-executed web search are unavailable in local mode. The agent can still
 fetch public pages and publish/edit designs. Other advertised models depend on
 your proxy's current account access and quotas.
+
+Search **Kimi** in the model picker, or choose the featured **Kimi K3.1 Pro**.
+Image attachments and visual `screenshot_design` results are enabled for K2.5,
+K2.6, K2.7 Code (including Highspeed), K2.8/Code, K3/256K, and K3.1 Pro
+(including Highspeed), following the installed proxy catalog's image-input
+capabilities. K2 and K2 Thinking remain text-only. libfx requires these explicit
+vision flags even when the proxy itself accepts images; model discovery alone
+does not enable image input. This does not add video uploads to fx0.
+The supported direct IDs are `kimi-k2`, `kimi-k2-thinking`, `kimi-k2.5`,
+`kimi-k2.6`, `kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, `kimi-k2.8`,
+`kimi-k2.8-code`, `kimi-k3`, `kimi-k3-256k`, `kimi-k3.1-pro`, and
+`kimi-k3.1-pro-highspeed`. Only IDs present in the live authenticated proxy
+catalog appear. These are distinct from `venice/kimi-*` routes; fx0 sends the
+entire ID unchanged through libfx's existing OpenAI Chat Completions adapter.
+CLIProxyAPI owns OAuth and upstream name translation; no additional login is needed.
+
+Kimi uses the normal streaming agent and design tools. Its current `/v1/models`
+entries do not advertise reasoning controls, so fx0 leaves reasoning at the
+proxy/model default and does not inject GPT's `reasoning_effort`. Highspeed
+entries are separate model choices, not fx0's Gateway fast toggle. fx0 does not
+infer vision support, context limits, or identical capabilities from the Kimi
+name. Catalog presence alone does not establish subscription access. Live UI checks on 2026-10-29 verified image attachments and preview screenshots
+with `kimi-k3` and `kimi-k3.1-pro`; other entries require account-specific
+validation before relying on them.
 
 Chat ownership/history use PGlite (local Postgres), and the existing journal runs
 against a dedicated Redis/Valkey child through an authenticated local HTTP
@@ -48,52 +130,82 @@ Optional settings, supplied as environment variables or in `.env.local`:
 | Setting | Default |
 | --- | --- |
 | `FX0_PROXY_BASE_URL` | `http://127.0.0.1:8317/v1` (loopback HTTP only) |
-| `FX0_PROXY_CONFIG` | `~/.cli-proxy-api/config.yaml` |
-| `FX0_PROXY_API_KEY` | Read from the config's `api-keys` list |
+| `FX0_PROXY_TOKEN_FILE` | `~/.cli-proxy-api/client-token`; an explicit file must exist and be nonempty |
+| `FX0_PROXY_CONFIG` | `~/.cli-proxy-api/config.yaml` fallback; an explicit config takes precedence over the default token path |
+| `FX0_PROXY_API_KEY` | Optional server-only override; otherwise token file, then config |
 | `FX0_MODEL` | `gpt-6.1-sol` |
 | `FX0_EFFORT` | `medium` |
 | `FX0_LOCAL_PORT` | `3000` |
 | `FX0_LOCAL_DATA_DIR` | `.local` |
-| `FX0_REFERENCE_ROOTS` | JSON array containing the user home directory (`~`) |
+| `FX0_WORKSTATION_TOOLS` | `1` in the local launcher; `0` selects read-only reference mode |
+| `FX0_WORKING_DIRECTORY` | This checkout |
+| `FX0_MCP_CONFIG` | Existing Codex/Claude and project MCP configuration |
+| `FX0_REFERENCE_ROOTS` | Home directory in read-only reference mode |
 
 Local mode is for one trusted workstation user. It rejects foreign request
 hosts/origins and cannot be enabled on Vercel. The ordinary `bun run dev` and
 hosted deployment continue to use the Vercel setup below.
 
-## Local theme and branding references
+For a synthetic provider check with local reference-file access disabled, use
+`FX0_WORKSTATION_TOOLS=0 FX0_REFERENCE_ROOTS='[]' bun run dev:local`. This changes the reference tools for
+that launch only. Select Kimi K3.1 Pro and request a tiny self-contained page
+using `publish_design`, then confirm the stream finishes and the preview works.
+`bun run test:local` covers catalog filtering, credential loading, and local
+boundaries; `bun run test:auth` also covers transport errors and cancellation.
 
-`bun run dev:local` gives the agent **read-only access to the user home directory**
-by default, including projects, Downloads, and `.agents/skills` or `.codex/skills`
-guidance. The parent agent and its research subagents can list directories, search
-literal text, and read excerpts through `list_reference_roots`,
-`list_reference_files`, `search_reference_files`, and `read_reference_file`.
-`read_reference_image` reads PNG/JPEG/GIF/WebP images up to 2 MiB, returns them to
-the model, and stores a private copy as an `fx0-asset:` handle for the preview.
+## Workstation agent tools
 
-For example, ask:
+`dev:local`, `start:local`, and the KDE launcher enable full workstation tools
+for the local agent and its subagents. The agent runs with the current OS user's
+permissions; the design preview remains a credentialless, isolated iframe.
+libfx supplies the agent loop, not the CLI's built-in shell/filesystem tools, so
+fx0 registers these host tools explicitly:
 
-> Read the brand tokens in ~/YeeBois/projects/beep-effect/packages/foundation/ui-system/brand
-> and the theme sources in ui/src/themes, then design a settings page using that visual system.
+- `workstation_context`: working directory, home and skill locations.
+- `read_file`, `list_files`, `search_files`: local source, handoffs, skills and
+  directory discovery, including hidden files and paths outside reference roots.
+- `write_file`, `edit_file`: real file creation and edits; overwrite is explicit
+  and exact edits reject missing or ambiguous matches.
+- `exec_command`, `write_stdin`: shell commands, git, builds, tests, installed
+  CLIs, network clients, process polling/input/termination, and optional real PTYs.
+  Commands have a default two-minute timeout, configurable up to one hour.
+  Cancelling the turn terminates its running command groups. Process handles are
+  scoped to the owning agent session and do not survive a server restart.
+- `view_image`: local image inspection and import as an `fx0-asset:` handle.
+  Whether the selected model accepts images still depends on provider metadata.
+- `list_mcp_servers`, `list_mcp_tools`, `call_mcp_tool`, `mcp_resources`: on-demand
+  MCP discovery, tool invocation and resources through existing configuration.
 
-To select different directories, put a JSON array of absolute paths (or paths
-starting with `~/`) into `.env.local`, then restart the launcher:
+The agent is instructed to inspect applicable `AGENTS.md`/`CLAUDE.md` and requested
+skills, preserve unrelated edits, honor the task's scope, and use the workstation's
+YubiKey and agent 1Password routes. Shell tools remove application and token/secret
+environment variables from child environments; configured MCP credentials are
+passed only to their server transports. Tool output is sent to the selected model
+and stored in the chat, just as other agent tool results are.
 
-```dotenv
-FX0_REFERENCE_ROOTS='["/absolute/path/to/brand", "/absolute/path/to/theme"]'
-```
+MCP configuration is read server-side from `~/.claude.json`,
+`~/.codex/config.toml`, then the working directory's `.mcp.json` (later entries
+win on duplicate names). `FX0_MCP_CONFIG` selects one explicit JSON/TOML file
+instead. Enabled/disabled tool selections are preserved. Stdio, Streamable HTTP,
+and explicitly configured legacy SSE are supported. Existing environment/header
+authentication works where available; CLI-private OAuth stores and browser cookies
+are not copied. Discovery exposes names and schemas, never configuration secrets.
+A listed connection may still be unavailable or require its own authentication.
 
-Set `FX0_REFERENCE_ROOTS='[]'` to disable the tools. Only configured directories
-are readable, and only in local mode. The model cannot grant itself additional
-roots. Credential filenames and stores, unrelated hidden paths, dependency/build
-directories, and symlinks escaping the configured roots are rejected. The tools have
-no write or shell operations. Text files are limited to 1 MiB, reads are paged (including character paging
-for minified HTML), and searches report truncation when bounded. UTF-8 SVG source
-is supported; raster images use `read_reference_image`. The design preview still requires self-contained HTML,
-so local assets must be adapted inline rather than referenced by filesystem URL.
+The default working directory is this checkout; set `FX0_WORKING_DIRECTORY` to
+another project if desired. Tools accept absolute paths and `~/`. For example:
 
-Requested source excerpts are sent to the selected model through CLIProxyAPI
-and saved with the chat's tool results. Source files are treated as reference
-evidence, never as instructions that can change the agent's tools or permissions.
+> Read the handoff and capability documents at these local paths, then build a
+> self-contained prototype with synthetic fixture data. Do not modify the source project.
+
+Set `FX0_WORKSTATION_TOOLS=0` to use the older read-only reference tools instead.
+Only in that mode, `FX0_REFERENCE_ROOTS` controls the permitted directories;
+`[]` disables those reference tools. By default those roots contain the home
+directory, with credential stores and escaping symlinks excluded. Full workstation
+mode uses ordinary OS permissions, not that reference-root filter.
+
+Local assets must still be embedded or imported as `fx0-asset:` handles for the
+preview; artifact JavaScript cannot read files, run shell commands, or invoke MCP.
 
 ## Features
 

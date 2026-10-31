@@ -1,4 +1,6 @@
 import type { SessionData } from './secure-session'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { KIMI_MODEL_LIMITS } from './local-model-limits.ts'
 
 // Single-user workstation mode is deliberately opt-in and cannot run on Vercel.
 export function localMode(): boolean {
@@ -46,6 +48,7 @@ export function proxyOptions() {
       // Custom providers need explicit vision metadata: libfx cannot infer it
       // from the proxy's OpenAI model list. Include both Opus 5.5 ID spellings.
       models: {
+        ...KIMI_MODEL_LIMITS,
         'claude-opus-5-5': { supportsVision: true },
         'claude-opus-5.5': { supportsVision: true },
       },

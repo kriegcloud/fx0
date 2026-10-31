@@ -1,0 +1,2572 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-29",
+  "product": "Majoor Assets Manager",
+  "source_commit": "1830902ce8084bc13b39b8934eb417575b3ba86f",
+  "source_root": "/home/elpresidank/ai/ComfyUI/custom_nodes/ComfyUI-Majoor-AssetsManager",
+  "design_direction": "Media-first professional workspace (user selected)",
+  "status_legend": {
+    "docs-only": "Advertised in a guide but implementation not located; do not present as working.",
+    "existing": "UI and/or documented implementation exists in audited source; not all paths exercised live.",
+    "fork": "Our custom implementation; preserve its semantics.",
+    "host": "Implemented but requires ComfyUI APIs, node support, browser or OS capabilities.",
+    "optional": "Implemented optional AI/compute capability; prerequisites and degraded states mandatory.",
+    "backend": "Backend/client capability found; dedicated UI not located or not established in this audit."
+  },
+  "features": [
+    {
+      "id": "LIB01",
+      "domain": "Library",
+      "title": "Browse output, input, custom roots, and collections",
+      "capability": "Switch the media population while retaining an explicit source context.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "A scope is not a physical move; workflow files have their own library.",
+      "evidence": [
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB02",
+      "domain": "Library",
+      "title": "Register and remove external roots",
+      "capability": "Add a labeled real directory and recursively browse/index its content.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Register concrete directories, not a wildcard expression; removing a root is not deleting its files.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/custom_roots.py",
+          "entry_line": 48,
+          "sha256": "6782ed5a4d301603d532359416c8826b3a7ca22672a3dfc0aea1b8286b831b98",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/custom_roots.py#L48"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB03",
+      "domain": "Library",
+      "title": "Filesystem browser and pinned folders",
+      "capability": "Navigate directories, go back/up, and pin a folder as a browser root.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Browsing an arbitrary path and registering a root are different actions.",
+      "evidence": [
+        {
+          "path": "ui/features/panel/panelPinnedFolders.ts",
+          "entry_line": 13,
+          "sha256": "08e335d200b29f281190aca1546f3612e44ad8c29b43e7ba72388a4137c50599",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/panelPinnedFolders.ts#L13"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB04",
+      "domain": "Library",
+      "title": "Folder operations",
+      "capability": "Create, rename, move, and delete folders; drop media on a folder to move it.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Folder cards in input/output are opt-in; show destination and write restrictions.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/filesystem.py",
+          "entry_line": 43,
+          "sha256": "d877b04cd91c56a892d2edd92a70a5581ed56970e63d7760b7a40df340d5135e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/filesystem.py#L43"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB05",
+      "domain": "Library",
+      "title": "Virtualized media grid",
+      "capability": "Browse large mixed-media libraries with progressive loading, card sizing, and configurable details.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Preserve scroll position and stable selection as results arrive; avoid rendering every asset.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/grid/VirtualAssetGridHost.vue",
+          "entry_line": 1,
+          "sha256": "1b7fa68febcf1cf4210c1f8f16b275a0a4b418eaf761675bfe60023a0bed78de",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/grid/VirtualAssetGridHost.vue#L1"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB06",
+      "domain": "Library",
+      "title": "Asset selection and keyboard navigation",
+      "capability": "Select one, toggle several, select a range, navigate cards, and act on a selection.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Make active asset, selected set, and current search population distinguishable.",
+      "evidence": [
+        {
+          "path": "ui/features/grid/GridSelectionManager.ts",
+          "entry_line": 3,
+          "sha256": "fb6d6ed5ad52ff385b2c4783329dffe3a2711f9ffd819bbf403439eb24e10bb7",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/grid/GridSelectionManager.ts#L3"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB07",
+      "domain": "Library",
+      "title": "Generation feed",
+      "capability": "Review recent generated assets in ComfyUI's bottom-panel feed with familiar card actions.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Reuse library cards; this is a compact host surface, not a separate duplicate product.",
+      "evidence": [
+        {
+          "path": "ui/features/bottomPanel/feed/feedHost.ts",
+          "entry_line": 252,
+          "sha256": "3d1ab21e15e8ca39a946796fa2db3072d5a965ee359201cdce2a45aa6b94e604",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/bottomPanel/feed/feedHost.ts#L252"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB08",
+      "domain": "Library",
+      "title": "Sibling and stack display",
+      "capability": "Hide redundant PNG siblings and group outputs by execution into expandable stacks.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "A stack is a related generation group, not necessarily an exact duplicate.",
+      "evidence": [
+        {
+          "path": "ui/features/grid/StackGroupCards.ts",
+          "entry_line": 7,
+          "sha256": "f138daafcd284c95de5970577b1710986a6699b8615b2425af79efee4bdcb443",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/grid/StackGroupCards.ts#L7"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIB09",
+      "domain": "Library",
+      "title": "Card status and metadata badges",
+      "capability": "Surface type, filename, dimensions, date, rating, tags, generation time, workflow and indexing state.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Use progressive disclosure; preserve visibility of meaningful failure/unindexed states.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/grid/AssetCardInner.vue",
+          "entry_line": 1,
+          "sha256": "4928811cfd8bf53fe06135f5f25579b53a2bff49d4d76b353bb689b250f5d651",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/grid/AssetCardInner.vue#L1"
+        },
+        {
+          "path": "ui/features/panel/controllers/scopeController.ts",
+          "entry_line": 3,
+          "sha256": "8c7d37ea695cf68c85954ecac219ed8ca693cf486d5a02347396b987731b7bd8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/controllers/scopeController.ts#L3"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA01",
+      "domain": "Search",
+      "title": "Text and metadata search",
+      "capability": "Find files using text and metadata-prefix search across prompts, models, samplers, LoRAs, controls, nodes and tags.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Prefix examples should follow the parser; do not invent an unrestricted query language.",
+      "evidence": [
+        {
+          "path": "ui/features/metadata/prefixSearch.ts",
+          "entry_line": 3,
+          "sha256": "e2f1dd4b6e38ac112f601bcf20ea633a950bf21b523f2773a2f686a103000e0a",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/prefixSearch.ts#L3"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        },
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA02",
+      "domain": "Search",
+      "title": "Structured filters",
+      "capability": "Combine media type, minimum rating, workflow presence, date, file size and resolution bounds.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Filter availability depends on scope and available metadata.",
+      "evidence": [
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA03",
+      "domain": "Search",
+      "title": "Workflow-aware media filters",
+      "capability": "Filter by workflow identifier/type, model and execution/runtime classification.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Detected metadata may be absent; unknown is not a failing value.",
+      "evidence": [
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA04",
+      "domain": "Search",
+      "title": "Calendar browsing",
+      "capability": "Use date histograms and exact/range dates to navigate generation history.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Calendar counts describe the current filters and source, not all disks.",
+      "evidence": [
+        {
+          "path": "ui/features/filters/calendar/AgendaCalendar.ts",
+          "entry_line": 131,
+          "sha256": "40a4444cf2b869930df36c274cb68a63b991d2d363a513f42295b1b97f456011",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/filters/calendar/AgendaCalendar.ts#L131"
+        },
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA05",
+      "domain": "Search",
+      "title": "Sort and context reset",
+      "capability": "Change sort order and clear filters, similar-search context or transient navigation.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Keep sort, active filters and source visible; an empty result must offer a useful reset.",
+      "evidence": [
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA06",
+      "domain": "Search",
+      "title": "Semantic and hybrid retrieval",
+      "capability": "Search by meaning, or combine lexical and vector retrieval.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "AI enabled and usable embeddings/models required; lexical browsing remains usable.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/hybrid_search.py",
+          "entry_line": 44,
+          "sha256": "47c03fc36ae11655cb789ad20b70e0ba96304ac22760b7191f6b9427a561b5c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/hybrid_search.py#L44"
+        },
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SEA07",
+      "domain": "Search",
+      "title": "Find visually similar assets",
+      "capability": "Use an asset as a reference and inspect scored similarity results.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1"
+      ],
+      "constraints": "Similarity is not exact duplication or identity proof; show query asset and exit action.",
+      "evidence": [
+        {
+          "path": "ui/features/panel/panelSimilarSearch.ts",
+          "entry_line": 52,
+          "sha256": "dd925b516c7e29c6d6c0d28c6ee245f8faa228d0d6de9e44f2cd277782055a7e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/panelSimilarSearch.ts#L52"
+        },
+        {
+          "path": "ui/api/endpoints.ts",
+          "entry_line": 11,
+          "sha256": "9d50f0d1f5b8dda40af96d86e9d74f551d0329389f2004b1ebdd2608038e67e4",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/api/endpoints.ts#L11"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG01",
+      "domain": "Organization",
+      "title": "Ratings",
+      "capability": "Set or clear 0\u20135 stars from cards, details, menus or keyboard.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Rating describes user preference; do not replace it with an AI score.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG02",
+      "domain": "Organization",
+      "title": "Tags",
+      "capability": "Edit asset tags and search/filter with them; synchronize ratings/tags when configured.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Separate user tags from AI suggestions until explicitly applied.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG03",
+      "domain": "Organization",
+      "title": "Collections",
+      "capability": "Create/delete named collections; add assets and remove membership; browse/search a collection.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Membership is logical; removing membership must not delete a file.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/CollectionsPopover.vue",
+          "entry_line": 1,
+          "sha256": "1a46ac3a984c90ef6a6a4ef6fefbdf16b3cf70248c657bc4f7eda0e75ad94a04",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/CollectionsPopover.vue#L1"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG04",
+      "domain": "Organization",
+      "title": "Smart collection ideas",
+      "capability": "Use suggested semantic queries to assemble candidate collections.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "These are suggestion/query flows; do not promise a permanently updating smart-folder rule engine.",
+      "evidence": [
+        {
+          "path": "ui/types/collections.d.ts",
+          "entry_line": 7,
+          "sha256": "865fc7d18a42c412e2e448d3430f36c03456a2f219aa89df8604f63ea920ae10",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/types/collections.d.ts#L7"
+        },
+        {
+          "path": "ui/vue/components/panel/CollectionsPopover.vue",
+          "entry_line": 1,
+          "sha256": "1a46ac3a984c90ef6a6a4ef6fefbdf16b3cf70248c657bc4f7eda0e75ad94a04",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/CollectionsPopover.vue#L1"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG05",
+      "domain": "Organization",
+      "title": "Discover visual groups",
+      "capability": "Cluster embedded assets and turn reviewed groups into collections.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Requires vector coverage; group labels/samples can be incomplete.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/CollectionsPopover.vue",
+          "entry_line": 1,
+          "sha256": "1a46ac3a984c90ef6a6a4ef6fefbdf16b3cf70248c657bc4f7eda0e75ad94a04",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/CollectionsPopover.vue#L1"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG06",
+      "domain": "Organization",
+      "title": "Duplicate review",
+      "capability": "Analyze exact duplicates, inspect alerts, merge tags into a keeper and separately delete duplicates.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Keep metadata merge and destructive removal explicit; similar images are not exact duplicates.",
+      "evidence": [
+        {
+          "path": "ui/features/panel/panelContextMenuExtraActions.ts",
+          "entry_line": 18,
+          "sha256": "c7339eed521b334297d5e5d80079f09e62e04a155737b6c9c7c661fe828fb2fc",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/panel/panelContextMenuExtraActions.ts#L18"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG07",
+      "domain": "Organization",
+      "title": "Stack members and provenance",
+      "capability": "Expand job/node groups to browse related outputs and retain source node/job context.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Preserve partial/live groups and finalization states.",
+      "evidence": [
+        {
+          "path": "ui/features/grid/StackGroupCards.ts",
+          "entry_line": 7,
+          "sha256": "f138daafcd284c95de5970577b1710986a6699b8615b2425af79efee4bdcb443",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/grid/StackGroupCards.ts#L7"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "ORG08",
+      "domain": "Organization",
+      "title": "Advanced stack management",
+      "capability": "Backend supports rename, cover selection, merge and dissolve of stacks.",
+      "status": "backend",
+      "proposed_surfaces": [
+        "P1",
+        "P3"
+      ],
+      "constraints": "Dedicated management UI was not located in this audit; proposed controls require wiring and validation.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/stacks.py",
+          "entry_line": 31,
+          "sha256": "4d66bb22e7d62d3c9491bc339293e82aaa1ec53e3a6ed1e13f2a9e59bfc719fe",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/stacks.py#L31"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS01",
+      "domain": "Asset inspection",
+      "title": "Metadata inspector",
+      "capability": "Read file facts and generation details beside the selected media.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Missing metadata is an explicit state; avoid empty technical panels by default.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/AssetSidebarContent.vue",
+          "entry_line": 1,
+          "sha256": "32df2c404c7f2eb694a6edca4cb36980d2f8cd4b5d3a4fa1fa6ec2017033bd9f",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/AssetSidebarContent.vue#L1"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS02",
+      "domain": "Asset inspection",
+      "title": "Prompt and sampling provenance",
+      "capability": "Inspect positive/negative prompts, seed, steps, CFG, sampler, scheduler and denoise.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Parsed provenance may be partial or inferred; display absence and multiple branches honestly.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/SidebarGenerationSection.vue",
+          "entry_line": 1,
+          "sha256": "083425dce18499ae8d63881ed844327c6d1704fff6800dfb713b04411cc83acb",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/SidebarGenerationSection.vue#L1"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS03",
+      "domain": "Asset inspection",
+      "title": "Models and graph provenance",
+      "capability": "Inspect checkpoint/model, VAE/CLIP, LoRAs, control networks, upscale and workflow-node details.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "References are not evidence that model files are installed.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/SidebarGenerationSection.vue",
+          "entry_line": 1,
+          "sha256": "083425dce18499ae8d63881ed844327c6d1704fff6800dfb713b04411cc83acb",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/SidebarGenerationSection.vue#L1"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS04",
+      "domain": "Asset inspection",
+      "title": "Generation timing and inputs",
+      "capability": "See generation duration and input references/previews associated with the result.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Timing may be unavailable for files without lifecycle/save-node metadata.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/GenerationInputThumb.vue",
+          "entry_line": 1,
+          "sha256": "0f5cdd73936f312aaddf807ee01d7025bbe3158b042236578e1caacad4e18105",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/GenerationInputThumb.vue#L1"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS05",
+      "domain": "Asset inspection",
+      "title": "Workflow availability and reopening",
+      "capability": "Open a media file's saved workflow in a new ComfyUI tab using the fork's Open workflow action.",
+      "status": "fork",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Never queue execution; preserve current work. API-only graph and missing workflow require distinct responses.",
+      "evidence": [
+        {
+          "path": "ui/features/workflows/openAssetWorkflow.ts",
+          "entry_line": 25,
+          "sha256": "2d9f22cc57b884720d85bf41f685e49407bec9eb56c71e31c9c4a9df6bc29e87",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/workflows/openAssetWorkflow.ts#L25"
+        },
+        {
+          "path": "ui/app/hostAdapter.ts",
+          "entry_line": 69,
+          "sha256": "8903606328bc718d4aa912081f8763f36f2809505970e77725d280be9fa4c76e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/hostAdapter.ts#L69"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS06",
+      "domain": "Asset inspection",
+      "title": "Raw/copyable metadata and comparison",
+      "capability": "Inspect structured generation information and compare metadata across review assets.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Keep raw detail secondary to human-readable differences; preserve copying.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/metadataCompare.ts",
+          "entry_line": 27,
+          "sha256": "535cee457477ce3bc706b10b2dda587576060a70120edf2f9bcd1f02c024fcfa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/metadataCompare.ts#L27"
+        },
+        {
+          "path": "ui/features/metadata/genInfoCompare.ts",
+          "entry_line": 25,
+          "sha256": "b86fe582a6e05f3df0ae30bfa0c3c21e9b1c5cae684cd1eaf54465600a2c9853",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/genInfoCompare.ts#L25"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "INS07",
+      "domain": "Asset inspection",
+      "title": "Single-file metadata refresh",
+      "capability": "Reset/re-index one file to repair stale or incomplete information.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Report busy, unchanged, refreshed and failed; do not present as media regeneration.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        },
+        {
+          "path": "ui/features/metadata/metadataSectionCatalog.ts",
+          "entry_line": 1,
+          "sha256": "8c53a247a13169c2d487489791e97f85e39467d73d31d9fd3adb957d594035c5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/metadata/metadataSectionCatalog.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED01",
+      "domain": "Media viewer",
+      "title": "Images and animated media",
+      "capability": "Open media, zoom/pan, fit, 1:1, fullscreen/distraction-free mode, navigate adjacent assets and use a filmstrip.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Separate display transform from saved media edits.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/panzoom.ts",
+          "entry_line": 9,
+          "sha256": "c425128dd4d2922baae812499fd84a1c4d229928335d1f863a32276bd27b8d24",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/panzoom.ts#L9"
+        },
+        {
+          "path": "ui/features/viewer/filmstrip.ts",
+          "entry_line": 124,
+          "sha256": "b7ad298506d37368e8a2118d9a71a9e75341512215c896adc254dca96450e566",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/filmstrip.ts#L124"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED02",
+      "domain": "Media viewer",
+      "title": "Video playback",
+      "capability": "Play/pause, scrub, adjust speed, step frames and use focused player shortcuts.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Media decoding and frame accuracy depend on browser/codec metadata.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/playerBarManager.ts",
+          "entry_line": 8,
+          "sha256": "2ef9de6cfe322ba2d0698d22cd9d3d2bb17bccec8525b9ef6229977403fe2230",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/playerBarManager.ts#L8"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED03",
+      "domain": "Media viewer",
+      "title": "Video ranges and looping",
+      "capability": "Inspect playback ranges with in/out markers and loop controls.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "A preview range is not a rendered trim/export promise.",
+      "evidence": [
+        {
+          "path": "ui/components/VideoControls.ts",
+          "entry_line": 285,
+          "sha256": "57f023ab6933ff7573f314667149cb1da0cc9e018c1353f55b2c8731ad1ba141",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/components/VideoControls.ts#L285"
+        },
+        {
+          "path": "ui/features/viewer/keyboard.ts",
+          "entry_line": 62,
+          "sha256": "c69aa248f58745e31d1a32a6e0e978b23158b19d87e72d28a166c04abfcef06d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/keyboard.ts#L62"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED04",
+      "domain": "Media viewer",
+      "title": "Audio playback and visualization",
+      "capability": "Play audio and inspect visualizer output with audio-specific controls.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Do not offer image-only analysis controls as working audio actions.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/audioVisualizer.ts",
+          "entry_line": 300,
+          "sha256": "4edf6642865f7ee7d430b6bd93075a8b414f2cc36c4c0f55d9d404d727dd0130",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/audioVisualizer.ts#L300"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED05",
+      "domain": "Media viewer",
+      "title": "3D preview",
+      "capability": "Orbit/inspect supported models, adjust render mode/background/lights/FOV and play animation clips.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Format, referenced resources and skeleton/animation availability gate controls.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/model3dSupport.ts",
+          "entry_line": 7,
+          "sha256": "f1df06d2c4febb437bc91c92e3812cd6cfcd28a34a4d4352315767a1d28c63fe",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/model3dSupport.ts#L7"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED06",
+      "domain": "Media viewer",
+      "title": "Display adjustments",
+      "capability": "Adjust exposure, gamma and RGB/R/G/B/alpha/luma channel display.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Non-destructive viewing; communicate whether capture includes adjustments.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED07",
+      "domain": "Media viewer",
+      "title": "Analysis overlays",
+      "capability": "Use zebras, RGB/luma histogram, luma waveform, pixel probe and loupe.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Advanced inspection drawer; show unavailable mode rather than fabricated readings.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/scopes.ts",
+          "entry_line": 268,
+          "sha256": "2a8340253a3322d65b9d9593f356fcb6b9d38924c53b9074980db7d32a80fa9f",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/scopes.ts#L268"
+        },
+        {
+          "path": "ui/features/viewer/probe.ts",
+          "entry_line": 3,
+          "sha256": "d91f07beb94359b19ad351149dad0e1d558c9c96d4bc09d3e548411a3cd4c944",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/probe.ts#L3"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED08",
+      "domain": "Media viewer",
+      "title": "Composition overlays",
+      "capability": "Use thirds, center, safe/golden guides and aspect overlays.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Guides do not crop or resize the source.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED10",
+      "domain": "Media viewer",
+      "title": "False color and vectorscope claims",
+      "capability": "The viewer tutorial advertises false color and vectorscope.",
+      "status": "docs-only",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "No matching control/render implementation found in audited viewer sources; exclude from implemented baseline until verified.",
+      "evidence": [
+        {
+          "path": "docs/VIEWER_FEATURE_TUTORIAL.md",
+          "entry_line": 1,
+          "sha256": "8d321274a933b6986b3d3caaaa7c023f03e8feda1cb5f88e97a05a4bc0a91165",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/VIEWER_FEATURE_TUTORIAL.md#L1"
+        },
+        {
+          "path": "ui/features/viewer/scopes.ts",
+          "entry_line": 268,
+          "sha256": "2a8340253a3322d65b9d9593f356fcb6b9d38924c53b9074980db7d32a80fa9f",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/scopes.ts#L268"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "MED09",
+      "domain": "Media viewer",
+      "title": "Capture and export from viewer",
+      "capability": "Save a current frame, copy supported frame/image content and download originals.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Clipboard and media support vary; failed capture needs a fallback.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/frameExport.ts",
+          "entry_line": 6,
+          "sha256": "27c0cea02bf34f6664a5f6c590cbb28698b865d0f7732e9b94af96273abfafc8",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/frameExport.ts#L6"
+        },
+        {
+          "path": "ui/features/viewer/toolbarControls.ts",
+          "entry_line": 6,
+          "sha256": "1e922949f71adc985747ea9dac3d8015d64488151ca2671f57aab43bfa493cad",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/toolbarControls.ts#L6"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "CMP01",
+      "domain": "Compare",
+      "title": "Two-asset A/B review",
+      "capability": "Compare two assets using wipe/blend and difference operations.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Label slot identity and comparison mode; do not imply perceptual quality scoring.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/abCompare.ts",
+          "entry_line": 1,
+          "sha256": "8f99044dcf15bf78a2196b3a39cb0d8f7d47798be4501c33f313c798aa697352",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/abCompare.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "CMP02",
+      "domain": "Compare",
+      "title": "Side-by-side and four-up review",
+      "capability": "Compare two to four assets in side-by-side/grid layouts.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Preserve independent media identity and active slot.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/sideBySide.ts",
+          "entry_line": 295,
+          "sha256": "39a09fb54eb1a5520bf207cefedb6296f2bfc6dccc45d0f25831ffe9b4b2ecbd",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/sideBySide.ts#L295"
+        },
+        {
+          "path": "ui/features/viewer/abCompare.ts",
+          "entry_line": 1,
+          "sha256": "8f99044dcf15bf78a2196b3a39cb0d8f7d47798be4501c33f313c798aa697352",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/abCompare.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "CMP03",
+      "domain": "Compare",
+      "title": "Pinned references A/B/C/D",
+      "capability": "Pin reference assets while reviewing newer outputs.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Pins are review state, not collections or favorites.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        },
+        {
+          "path": "ui/features/viewer/abCompare.ts",
+          "entry_line": 1,
+          "sha256": "8f99044dcf15bf78a2196b3a39cb0d8f7d47798be4501c33f313c798aa697352",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/abCompare.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "CMP04",
+      "domain": "Compare",
+      "title": "Comparison synchronization",
+      "capability": "Coordinate video playback and view transforms where supported.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P2"
+      ],
+      "constraints": "Mixed types, duration mismatches and unsupported synchronization need explicit states.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/videoSync.ts",
+          "entry_line": 17,
+          "sha256": "bdc0a82afa8db148c09b1eabfb792c630e7e462e57771dd0231e80ff34b70f6b",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/videoSync.ts#L17"
+        },
+        {
+          "path": "ui/features/viewer/abCompare.ts",
+          "entry_line": 1,
+          "sha256": "8f99044dcf15bf78a2196b3a39cb0d8f7d47798be4501c33f313c798aa697352",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/abCompare.ts#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV01",
+      "domain": "Live generation",
+      "title": "Floating and detached review",
+      "capability": "Move/resize the floating viewer and pop it into a separate window.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Popup support depends on browser/Desktop host; provide blocked-popup fallback.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/floatingViewerPopout.ts",
+          "entry_line": 196,
+          "sha256": "f36ed68b5023d410c2e728afc37a19d4dfddfa690addfef867cc57c70d0d60af",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerPopout.ts#L196"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV02",
+      "domain": "Live generation",
+      "title": "Completed-output stream",
+      "capability": "Follow newly completed generation results automatically.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Different from sampler previews and selected-node previews; keep follow mode visible.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/LiveStreamTracker.ts",
+          "entry_line": 75,
+          "sha256": "15b988422057d43bff1e78851ed4d1d12ffc0689f25c92f70fb245755dcc9516",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/LiveStreamTracker.ts#L75"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV03",
+      "domain": "Live generation",
+      "title": "Selected-node stream",
+      "capability": "Preview media exposed by the selected compatible ComfyUI node.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Unsupported node or missing frontend preview is a normal state.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/nodeStream/NodeStreamController.ts",
+          "entry_line": 505,
+          "sha256": "357d08c402feff47660dad7bfb11ee42770bdb83c404095cacf392ddf1ba54de",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/nodeStream/NodeStreamController.ts#L505"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV04",
+      "domain": "Live generation",
+      "title": "Sampler and adapter previews",
+      "capability": "Show denoising previews and supported KJNodes/LTX/image-operation preview sources.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Adapter availability and experimental fallback settings gate behavior.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/nodeStream/NodeStreamRegistry.ts",
+          "entry_line": 36,
+          "sha256": "62ac7c92e1caa0cc2237ce6a118c77b18f4beaea530afc7566bdd1e5f620f8af",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/nodeStream/NodeStreamRegistry.ts#L36"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV05",
+      "domain": "Live generation",
+      "title": "Execution status and progress",
+      "capability": "Monitor running generation, progress and emerging/final outputs.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Do not promote temporary previews to durable saved assets.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV06",
+      "domain": "Live generation",
+      "title": "Node parameter editing",
+      "capability": "Inspect and adjust compatible current-workflow node widgets from the viewer.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Distinguish editing the active graph from inspecting a saved asset's historical graph.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/workflowSidebar/NodeWidgetRenderer.ts",
+          "entry_line": 102,
+          "sha256": "e3d0b74c61991087c47b050fb627e92fc1bd2165cea210a0c7541be8d94a6de1",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/workflowSidebar/NodeWidgetRenderer.ts#L102"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "LIV07",
+      "domain": "Live generation",
+      "title": "Run and Stop",
+      "capability": "Queue the active workflow or interrupt generation from the viewer.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P4"
+      ],
+      "constraints": "Execution is explicit; opening media/workflows must not silently run anything.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/workflowSidebar/sidebarRunButton.ts",
+          "entry_line": 40,
+          "sha256": "5794a7bf379fe1b65e1e6368d38c71219b7a29437f34e2a539412c3eb3b2c6df",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/workflowSidebar/sidebarRunButton.ts#L40"
+        },
+        {
+          "path": "ui/features/viewer/floatingViewerUi.ts",
+          "entry_line": 168,
+          "sha256": "d12dca77801c81b134a01eacd248f7df0f43910c65fc0f26dff01a73dd836129",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/floatingViewerUi.ts#L168"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF01",
+      "domain": "Workflow library",
+      "title": "Browse saved workflow JSON",
+      "capability": "Read workflows from configured roots with task/model/provider/runtime/category summaries.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Separate workflow documents from media assets; malformed/oversized files may be skipped.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/workflows.py",
+          "entry_line": 54,
+          "sha256": "f4e0cdd54712ebfc3d9ef51a8f9cc9c3074ffebf192862af8fb85b53ce9eaa49",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/workflows.py#L54"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF02",
+      "domain": "Workflow library",
+      "title": "Save current canvas and import JSON",
+      "capability": "Store a current or imported workflow in the managed workflow root.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Show destination, overwrite conflict and missing host import/serialize capability.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/workflows/WorkflowSaveInfoDialog.vue",
+          "entry_line": 1,
+          "sha256": "7b24defda7f30b79593f2a8ae181334a6ec96ed1add86dc701b5ac60275fb043",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/workflows/WorkflowSaveInfoDialog.vue#L1"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF03",
+      "domain": "Workflow library",
+      "title": "Load a saved workflow",
+      "capability": "Load through ComfyUI import APIs and update usage history.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Dirty-canvas protection differs from the fork's new-tab Open workflow action.",
+      "evidence": [
+        {
+          "path": "ui/app/hostAdapter.ts",
+          "entry_line": 69,
+          "sha256": "8903606328bc718d4aa912081f8763f36f2809505970e77725d280be9fa4c76e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/hostAdapter.ts#L69"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF04",
+      "domain": "Workflow library",
+      "title": "Organize workflow files",
+      "capability": "Rename, categorize, duplicate, delete and export managed workflow JSON.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Category can be a real subfolder; writes are limited to managed paths.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF05",
+      "domain": "Workflow library",
+      "title": "Workflow descriptive metadata",
+      "capability": "Edit task, model family, provider/runtime, notes, tags and favorites.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Manual overrides should be distinguishable from detected values.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/workflows/WorkflowInfoDialog.vue",
+          "entry_line": 1,
+          "sha256": "2d3588b7d0a7040d775c60ebbf66f89444f4107765c07aedcd1dd65d0273a973",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/workflows/WorkflowInfoDialog.vue#L1"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF06",
+      "domain": "Workflow library",
+      "title": "Workflow thumbnails",
+      "capability": "Use adjacent/static/animated previews, graph fallback or a linked output as thumbnail.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Only compatible output media can become thumbnails; conversion can fail.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/SidebarWorkflowSection.vue",
+          "entry_line": 1,
+          "sha256": "43a4c0d1ac513f13e60c3954581dd962aeff50bce8fd4ade6986b052e5a6fe64",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/SidebarWorkflowSection.vue#L1"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF07",
+      "domain": "Workflow library",
+      "title": "Workflow sorting and grouping",
+      "capability": "Sort by favorites, usage, recent load, name/task/model; group by task/model/category.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Do not apply workflow-only grouping controls to ordinary assets.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/SortPopover.vue",
+          "entry_line": 1,
+          "sha256": "ffc3a9ee5c2b32fd6d98c27c8b4580fecfb56a8021662dc8c8fce2f99b9b2f25",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/SortPopover.vue#L1"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF08",
+      "domain": "Workflow library",
+      "title": "Workflow validation and revisions",
+      "capability": "Inspect missing node/model diagnostics, discovered versions and a comparison with a revision.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "This is not Git, arbitrary rollback or automatic dependency installation.",
+      "evidence": [
+        {
+          "path": "ui/vue/components/panel/sidebar/SidebarWorkflowSection.vue",
+          "entry_line": 1,
+          "sha256": "43a4c0d1ac513f13e60c3954581dd962aeff50bce8fd4ade6986b052e5a6fe64",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/vue/components/panel/sidebar/SidebarWorkflowSection.vue#L1"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF09",
+      "domain": "Workflow library",
+      "title": "Graph Map inspection",
+      "capability": "Pan/zoom a readable saved graph with named nested subgraphs and node details.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Inspection must not replace the active graph; large/missing graphs need fallback.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/workflowGraphMap/WorkflowGraphMapPanel.ts",
+          "entry_line": 24,
+          "sha256": "7de4e10f196d3e8ba195a5d585afe157a46c3c07512671264018c88cea65b1a9",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/workflowGraphMap/WorkflowGraphMapPanel.ts#L24"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "WF10",
+      "domain": "Workflow library",
+      "title": "Graph Map reuse actions",
+      "capability": "Copy/import nodes or workflows and transfer compatible parameters to the host.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P5"
+      ],
+      "constraints": "Destination and compatibility matter; modifying a graph differs from running it.",
+      "evidence": [
+        {
+          "path": "ui/features/viewer/workflowGraphMap/workflowGraphMapActions.ts",
+          "entry_line": 27,
+          "sha256": "5a03ff6853fa5f44e2087ba58789618c5a1dce0e98a749a409e4b5213ec92dde",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/viewer/workflowGraphMap/workflowGraphMapActions.ts#L27"
+        },
+        {
+          "path": "docs/WORKFLOWS.md",
+          "entry_line": 1,
+          "sha256": "7886a86569528efcb0eb07aea76e256fb9afc82a6ead973c3736cf89cf345a15",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/WORKFLOWS.md#L1"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL01",
+      "domain": "Reuse and files",
+      "title": "Load Asset and drag into ComfyUI",
+      "capability": "Create compatible media loaders or populate existing compatible nodes/canvas drops.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Compatibility and staged input paths gate success; do not invent universal node support.",
+      "evidence": [
+        {
+          "path": "ui/features/dnd/canvasLoaderNode.ts",
+          "entry_line": 77,
+          "sha256": "642f518c9a8bc1d3bdf193d4f95fc68041fef965b3a91e69d92bce7141fc4781",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/dnd/canvasLoaderNode.ts#L77"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL02",
+      "domain": "Reuse and files",
+      "title": "Stage to input and upload",
+      "capability": "Copy media to ComfyUI input or upload supported files for host reuse.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Copy/stage is different from moving the source; show collision handling and destination.",
+      "evidence": [
+        {
+          "path": "ui/features/dnd/staging/stageToInput.ts",
+          "entry_line": 25,
+          "sha256": "b89b72f3c41a10624bb682549c116b8183fd25bfb372d8ad884ffcdbd1a6584a",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/dnd/staging/stageToInput.ts#L25"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/scan_upload.py",
+          "entry_line": 28,
+          "sha256": "e8896df89e546ec6a22563919da504fb7a4e82c03acef50269f7c6e42f87f0b6",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/scan_upload.py#L28"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL03",
+      "domain": "Reuse and files",
+      "title": "Reveal and copy path",
+      "capability": "Open the containing folder on the server machine and copy a file path.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Remote browser users may not share the server filesystem; reveal is policy-controlled.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL04",
+      "domain": "Reuse and files",
+      "title": "Rename and delete assets",
+      "capability": "Rename one file or delete one/many with permissions and partial-failure reporting.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Do not promise universal undo; distinguish selection count from successful operations.",
+      "evidence": [
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL05",
+      "domain": "Reuse and files",
+      "title": "Download original or clean copy",
+      "capability": "Export original media or a copy with supported ComfyUI metadata stripped.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Clean does not mean all conceivable private metadata is removed in every format.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/filesystem.py",
+          "entry_line": 43,
+          "sha256": "d877b04cd91c56a892d2edd92a70a5581ed56970e63d7760b7a40df340d5135e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/filesystem.py#L43"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL06",
+      "domain": "Reuse and files",
+      "title": "Selection ZIP and OS drag-out",
+      "capability": "Download multiple files as a ZIP and use supported drag-out export gestures.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "OS/browser drag behavior varies; retain explicit download fallback.",
+      "evidence": [
+        {
+          "path": "ui/features/dnd/out/DragOut.ts",
+          "entry_line": 137,
+          "sha256": "af8c8e2e1404f690eed5febe1ca5b3c020918d84e2dbcd7b66aa10786d638ff0",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/dnd/out/DragOut.ts#L137"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/batch_zip.py",
+          "entry_line": 61,
+          "sha256": "8a99a72be8ba591b650a66ef2838c32b353e27c009d61563d84b37d7ea57d952",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/batch_zip.py#L61"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "FIL07",
+      "domain": "Reuse and files",
+      "title": "Collect reproduction files",
+      "capability": "Bundle asset, embedded workflow/API graph, traced prompts, available inputs and a manifest.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "constraints": "Model weights are listed, not copied; missing/out-of-root inputs are reported; output may use fallback folder.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/collect_files.py",
+          "entry_line": 36,
+          "sha256": "37ab53423172ca8dffe1d3a660114de3028d4744f0a5c1390909352627460903",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/collect_files.py#L36"
+        },
+        {
+          "path": "docs/COLLECT_FILES.md",
+          "entry_line": 1,
+          "sha256": "a52be697558e9ae648e5881d41aae42a3d956b673c9ca2506aaac7fa18ffa03c",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/COLLECT_FILES.md#L1"
+        },
+        {
+          "path": "ui/features/contextmenu/GridContextMenu.ts",
+          "entry_line": 1776,
+          "sha256": "99f75653fa36b80f76e692ae06885a7cf22169701c19e62e7b886b1646b04c4d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/contextmenu/GridContextMenu.ts#L1776"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI01",
+      "domain": "AI enrichment",
+      "title": "Optional AI activation and readiness",
+      "capability": "Enable local AI features and expose disabled/loading/ready/degraded/model-missing states.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "Enabled preference, loaded model and usable index are separate facts.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsSearch.ts",
+          "entry_line": 21,
+          "sha256": "77245a7ce488d16d43f3ea6295495a0cf545038e71aad815088c9920938ad510",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsSearch.ts#L21"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI02",
+      "domain": "AI enrichment",
+      "title": "Asset embeddings and backfill",
+      "capability": "Index one asset or backfill missing vectors with progress and coverage.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "Background compute competes for resources; partial coverage must remain visible.",
+      "evidence": [
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI03",
+      "domain": "AI enrichment",
+      "title": "Auto-tag suggestions",
+      "capability": "Generate candidate semantic tags and apply chosen suggestions.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "Suggestions are not user-confirmed labels; expose review before adoption.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI04",
+      "domain": "AI enrichment",
+      "title": "Caption generation",
+      "capability": "Generate an image/video description using the optional caption model.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "A caption is not the original generation prompt; failures do not block normal viewing.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI05",
+      "domain": "AI enrichment",
+      "title": "Prompt alignment",
+      "capability": "Inspect a similarity/alignment score between content and prompt.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "Not a verified quality, safety or identity judgement; missing prompt/model gives unavailable.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "AI06",
+      "domain": "AI enrichment",
+      "title": "AI memory controls",
+      "capability": "Limit concurrency, control caption/index-on-scan and unload models after use or now.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P6"
+      ],
+      "constraints": "Memory purge can affect host models when idle; explain impact before action.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsSearch.ts",
+          "entry_line": 21,
+          "sha256": "77245a7ce488d16d43f3ea6295495a0cf545038e71aad815088c9920938ad510",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsSearch.ts#L21"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/vector_search.py",
+          "entry_line": 51,
+          "sha256": "1db0ccc4e9593406d6d1dbc60ded397d797a1bab28ce0938a56232f73596558e",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/vector_search.py#L51"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS01",
+      "domain": "Library operations",
+      "title": "Index status and scan",
+      "capability": "See database/tool readiness and initiate incremental/full or targeted scans.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Browsing, indexing and vector enrichment have different progress and failure states.",
+      "evidence": [
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS02",
+      "domain": "Library operations",
+      "title": "Watcher controls",
+      "capability": "Enable/disable file watching, select scope and tune debounce/deduplication.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Current resolver supports output OR one selected custom root, not all character roots simultaneously.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/features/index/watcher_scope.py",
+          "entry_line": 22,
+          "sha256": "8ee9109f34bb6c1c62a87d26530dfcae44dd88960079a546011d35ccec0d7cf9",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/features/index/watcher_scope.py#L22"
+        },
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS03",
+      "domain": "Library operations",
+      "title": "Database backup and restore",
+      "capability": "Save, list and restore index backups.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "An index backup is not a backup of source media; restore confirmation must say what is replaced.",
+      "evidence": [
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS04",
+      "domain": "Library operations",
+      "title": "Database maintenance and resets",
+      "capability": "Optimize, repair/clean supported index issues, reset index or delete database under guards.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Separate low-risk scans from destructive reset; avoid promising media deletion or preservation beyond operation contract.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/db_maintenance.py",
+          "entry_line": 41,
+          "sha256": "9da66e72b788913a08109ca02619994be3dacf81efeb684064f0da4ed4695d11",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/db_maintenance.py#L41"
+        },
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS05",
+      "domain": "Library operations",
+      "title": "Duplicate analysis status",
+      "capability": "Surface alerts and progress from duplicate analysis with a route to review.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Don't auto-delete; analysis and action are separate steps.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/duplicates.py",
+          "entry_line": 24,
+          "sha256": "bc2fee89f1d00431dddb45f940d7e1a7252dfea9e7fd9c88cf0316b637c5dc18",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/duplicates.py#L24"
+        },
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS06",
+      "domain": "Library operations",
+      "title": "Library audit endpoint",
+      "capability": "Query library audit results for missing/incomplete asset information.",
+      "status": "backend",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Client helper and server route exist; a dedicated end-user audit view was not located.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/audit.py",
+          "entry_line": 31,
+          "sha256": "06a77c5bb641111e686a9bdaaa3c997f33a1b2059884a1b80b17e2b3bf4f6883",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/audit.py#L31"
+        },
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "OPS07",
+      "domain": "Library operations",
+      "title": "Runtime diagnostics and recovery",
+      "capability": "Inspect health, counters, tools, execution state, logs/settings and retry unavailable services.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P6"
+      ],
+      "constraints": "Technical diagnostics belong in advanced support surfaces, not the main browsing toolbar.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/health.py",
+          "entry_line": 74,
+          "sha256": "868ac795f85f6dd8538eb85cf032b8676bcaf82dc4a7e3c16e13482bf0fac96b",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/health.py#L74"
+        },
+        {
+          "path": "ui/features/status/StatusDot.ts",
+          "entry_line": 399,
+          "sha256": "4200e64aaf64cdb89cde698a48bc8c0f0f4ffe2b187aa7bf561e379972c603aa",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/features/status/StatusDot.ts#L399"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET01",
+      "domain": "Preferences and integration",
+      "title": "Appearance and browser density",
+      "capability": "Configure grid/feed details, sizes, colors, hover/selection treatment and sidebar position.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "New design should use coherent tokens; individual old knobs need not dictate layout.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsGrid.ts",
+          "entry_line": 25,
+          "sha256": "79c26c6208770dda67c3d23b62c2e709c959a2a95c0c65762697fe20982860e5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsGrid.ts#L25"
+        },
+        {
+          "path": "ui/app/settings/settingsFeed.ts",
+          "entry_line": 19,
+          "sha256": "8bb554ac47131c78739df466210172e1841d1f56e1c4e17157add3a113f2b341",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsFeed.ts#L19"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET02",
+      "domain": "Preferences and integration",
+      "title": "Viewer and live defaults",
+      "capability": "Configure pan, WebGL fallback, pause during execution, preview sources, auto-open/follow and Graph Map detail.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Avoid unexpected auto-open; reflect per-context preference scope.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsViewer.ts",
+          "entry_line": 26,
+          "sha256": "ee19d96cdb30e545f7b652fca59af6604c6e8888f5453f1b83832eebfe0360e1",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsViewer.ts#L26"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET03",
+      "domain": "Preferences and integration",
+      "title": "Source paths",
+      "capability": "Configure input/output/index directories and workflow roots.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Input/output paths affect real host files; index path affects database location.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsAdvanced.ts",
+          "entry_line": 53,
+          "sha256": "e18f802677405987dc4df4a628ecd44d7655dc1da94195f35e1e56120fb0013b",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsAdvanced.ts#L53"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET04",
+      "domain": "Preferences and integration",
+      "title": "Performance and scanning",
+      "capability": "Configure scan mode/startup, hydration, cache/polling, result caps and watcher limits.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Separate ordinary preferences from expert tuning; include units and restart implications.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsScanning.ts",
+          "entry_line": 29,
+          "sha256": "e37c8684309f4dc291dd0638f1c8f34d3be04ee1bb120148a1962796b527976c",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsScanning.ts#L29"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET05",
+      "domain": "Preferences and integration",
+      "title": "Formats and metadata tools",
+      "capability": "Select probe/fallback behavior and experimental JXL/LTX preview support.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Installed decoders/tools gate behavior; feature toggle alone is not availability.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsViewer.ts",
+          "entry_line": 26,
+          "sha256": "ee19d96cdb30e545f7b652fca59af6604c6e8888f5453f1b83832eebfe0360e1",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsViewer.ts#L26"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET06",
+      "domain": "Preferences and integration",
+      "title": "Write permissions and authentication",
+      "capability": "Manage safe/read-only mode and allowed operations; show authorization status and token setup.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Prototype uses synthetic states; never read or embed real secrets. Preserve backend write/CSRF guards.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsSecurity.ts",
+          "entry_line": 73,
+          "sha256": "dfbb93eb2469e723fc594521499175aeb0cefb4eb1ea7092acf7ade23ce858e2",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsSecurity.ts#L73"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET07",
+      "domain": "Preferences and integration",
+      "title": "Language and help",
+      "capability": "Follow or override host language and access user guide/docs/shortcut help.",
+      "status": "existing",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Long translations and keyboard conflicts must be considered.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsAdvanced.ts",
+          "entry_line": 53,
+          "sha256": "e18f802677405987dc4df4a628ecd44d7655dc1da94195f35e1e56120fb0013b",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsAdvanced.ts#L53"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "SET08",
+      "domain": "Preferences and integration",
+      "title": "Optional model access and diagnostics",
+      "capability": "Configure model-download access and AI/logging preferences.",
+      "status": "optional",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Connection/download capability differs from local inference; mask all secret fields in eventual UI.",
+      "evidence": [
+        {
+          "path": "ui/app/settings/settingsAdvanced.ts",
+          "entry_line": 53,
+          "sha256": "e18f802677405987dc4df4a628ecd44d7655dc1da94195f35e1e56120fb0013b",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsAdvanced.ts#L53"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "EXT01",
+      "domain": "Preferences and integration",
+      "title": "Plugin APIs",
+      "capability": "List, enable and reload backend extension plugins.",
+      "status": "backend",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Developer capability; no need for a prominent marketplace page; no marketplace established by these routes.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/plugins.py",
+          "entry_line": 23,
+          "sha256": "191a197f76520b89b2158922e7760fe2a0ef381b021101a484c96957aeb5fcff",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/plugins.py#L23"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "EXT02",
+      "domain": "Preferences and integration",
+      "title": "External integration and API v2",
+      "capability": "Send assets from nodes and expose versioned asset/integration routes.",
+      "status": "backend",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Design adapters to existing contracts; do not imply accounts, cloud sync or multi-user collaboration.",
+      "evidence": [
+        {
+          "path": "mjr_am_backend/routes/handlers/integration.py",
+          "entry_line": 34,
+          "sha256": "93b2b9e3c4122c9b0a6f90392308a8f9323fdc88dd8eaf568102ad2135d4208d",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/integration.py#L34"
+        },
+        {
+          "path": "mjr_am_backend/routes/handlers/api_v2_assets.py",
+          "entry_line": 52,
+          "sha256": "b512aca0e35514c2eb084cd9172ff741758930da1c235ba30b19e1440fcf8bf5",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/mjr_am_backend/routes/handlers/api_v2_assets.py#L52"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "NODE01",
+      "domain": "Preferences and integration",
+      "title": "Majoor Save Image",
+      "capability": "Save PNG outputs with workflow/prompt and generation timing metadata.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "ComfyUI node capability, not a new asset-manager editor page.",
+      "evidence": [
+        {
+          "path": "docs/CUSTOM_NODES.md",
+          "entry_line": 1,
+          "sha256": "9e5978c1634e204f5c381dc3ccc3a919567014f69d17c91035076c13cb012141",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/CUSTOM_NODES.md#L1"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "NODE02",
+      "domain": "Preferences and integration",
+      "title": "Majoor Save Video",
+      "capability": "Save video/image frames as MP4/GIF/WebP, with audio and sidecar/timing options.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Depends on available codecs/PyAV; keep node widget configuration in host.",
+      "evidence": [
+        {
+          "path": "docs/CUSTOM_NODES.md",
+          "entry_line": 1,
+          "sha256": "9e5978c1634e204f5c381dc3ccc3a919567014f69d17c91035076c13cb012141",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/CUSTOM_NODES.md#L1"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    },
+    {
+      "id": "NODE03",
+      "domain": "Preferences and integration",
+      "title": "GenInfo Override",
+      "capability": "Supply explicit prompts/models/sampling metadata to Majoor save nodes.",
+      "status": "host",
+      "proposed_surfaces": [
+        "P7"
+      ],
+      "constraints": "Preserve provenance support without building a second graph editor.",
+      "evidence": [
+        {
+          "path": "docs/CUSTOM_NODES.md",
+          "entry_line": 1,
+          "sha256": "9e5978c1634e204f5c381dc3ccc3a919567014f69d17c91035076c13cb012141",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/docs/CUSTOM_NODES.md#L1"
+        },
+        {
+          "path": "ui/app/settings/settingsCore.ts",
+          "entry_line": 30,
+          "sha256": "21213486f700bc79faefe4bb5bb8f677f9d0932c0380c37266ea5b3b18dd10ed",
+          "url": "https://github.com/kriegcloud/ComfyUI-Majoor-AssetsManager/blob/1830902ce8084bc13b39b8934eb417575b3ba86f/ui/app/settings/settingsCore.ts#L30"
+        }
+      ],
+      "verification": "source-inspected; not a claim of end-to-end runtime verification"
+    }
+  ],
+  "gaps_and_non_goals": [
+    {
+      "id": "GAP01",
+      "title": "Watch all character GENERATIONS roots at once",
+      "status": "proposed-backend",
+      "reason": "Current watcher_scope.py resolves output or one custom root. Multiple registered roots do not mean simultaneous watchers.",
+      "surfaces": [
+        "P6"
+      ]
+    },
+    {
+      "id": "GAP02",
+      "title": "Auto-discover new <trigger>/GENERATIONS directories",
+      "status": "proposed-backend",
+      "reason": "No verified glob-root discovery contract. Register existing real directories in current product.",
+      "surfaces": [
+        "P6"
+      ]
+    },
+    {
+      "id": "GAP03",
+      "title": "Unified task-centered shell and command routing",
+      "status": "proposed-frontend",
+      "reason": "Recompose existing library, viewer, workflows and operations surfaces; navigation proposal is not existing route structure.",
+      "surfaces": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7"
+      ]
+    },
+    {
+      "id": "GAP04",
+      "title": "Persistent saved filter rules and dynamic collections",
+      "status": "unverified-new-feature",
+      "reason": "Smart ideas/clustering exist; a general automatically refreshed saved-query engine was not established.",
+      "surfaces": [
+        "P1",
+        "P3"
+      ]
+    },
+    {
+      "id": "GAP05",
+      "title": "Global undo, trash browser or editing history",
+      "status": "unverified-new-feature",
+      "reason": "Do not promise restoration for delete/rename/move; inspect concrete backend operations before designing undo.",
+      "surfaces": [
+        "P1",
+        "P6"
+      ]
+    },
+    {
+      "id": "GAP06",
+      "title": "Full media editor, cloud sync, team accounts, model marketplace",
+      "status": "out-of-scope",
+      "reason": "Not established product capabilities; viewer adjustments and save nodes are not a general editor or cloud DAM.",
+      "surfaces": []
+    }
+  ]
+}

@@ -16,6 +16,7 @@ import { Textarea } from './ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { TRIAL_MODEL, usesFreePrompts } from '../lib/trial-policy'
 import { Skeleton } from './ui/skeleton'
+import { modelDisplayName } from '../lib/local-models'
 
 // The model the page opens with, read on the server: the chat's stored settings,
 // or for a new design the viewer's remembered picks from cookies.
@@ -190,7 +191,7 @@ function PreferredModelLabel({ preference, sessionId, booting, defaultModel }: {
   const page = use(preference)
   if (!booting && page.sessionId !== sessionId) return <Skeleton className="h-3.5 w-28 max-w-full" />
   const picked = page.model || defaultModel
-  return <span className="truncate">{(picked.endsWith('-fast') ? picked.slice(0, -'-fast'.length) : picked).split('/').at(-1)}</span>
+  return <span className="truncate">{modelDisplayName(picked.endsWith('-fast') ? picked.slice(0, -'-fast'.length) : picked)}</span>
 }
 
 export default function Composer({
@@ -696,7 +697,7 @@ export default function Composer({
   const intrinsicFast = Boolean(fastBase) && (models.length === 0 || models.includes(fastBase))
   const resolvedModel = intrinsicFast ? fastBase : pickedModel
   const fastOn = trial || fast || intrinsicFast
-  const modelLabel = resolvedModel ? (resolvedModel.split('/').at(-1) ?? resolvedModel) : 'Model'
+  const modelLabel = resolvedModel ? modelDisplayName(resolvedModel) : 'Model'
   // The trial model by its slug, as the picker lists it: the base model when the catalog has it.
   const trialBase = TRIAL_MODEL.slice(0, -'-fast'.length)
   const trialLabel = (models.length === 0 || models.includes(trialBase) ? trialBase : TRIAL_MODEL).split('/').at(-1)
@@ -1044,7 +1045,7 @@ export default function Composer({
                       })}
                       className={`flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-sm outline-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground ${model === candidate ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
                     >
-                      <span className="min-w-0 flex-1 truncate">{candidate.split('/').at(-1) ?? candidate}</span>
+                      <span className="min-w-0 flex-1 truncate" title={candidate}>{modelDisplayName(candidate)}</span>
                       {resolvedModel === candidate && effortOptions.length > 0 && (
                         <span
                           role="button"

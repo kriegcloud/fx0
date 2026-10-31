@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-29",
+  "source_commit": "1830902ce8084bc13b39b8934eb417575b3ba86f",
+  "capability_count": 95,
+  "source_evidence_hashes": "all match current pinned checkout",
+  "capability_ids": "unique; all map to proposed surfaces",
+  "route_coverage": "151 literal registrations mapped to capability families",
+  "local_document_links": "all resolve",
+  "visual_map_checks": [
+    "95 rendered feature cards",
+    "search",
+    "availability filter",
+    "surface filter",
+    "reset",
+    "empty state",
+    "390px width without horizontal overflow",
+    "no JavaScript errors"
+  ],
+  "validation_method": "Headless Chromium DOM assertions only; no screenshots or images viewed. Feature behavior itself was audited in source, not fully exercised in the running application.",
+  "fx0_reference_commit": "dfc77a0b3ff0513941c5d9b2c81ae92750e80214",
+  "fx0_reference_note": "README contains existing uncommitted local changes describing Kimi/reference-tool support; inspected in place, preserved. No model run or credentials accessed."
+}

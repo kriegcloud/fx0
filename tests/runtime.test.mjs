@@ -726,6 +726,18 @@ test('a turn Gateway refused ends as an error with the reason the agent\'s fetch
   assert.deepEqual(projector.itemsOf({ type: 'text_delta', messageId: 'other', delta: 'x' }, 5), [], 'lines of turns fx0 did not start are skipped')
 })
 
+test('both truncated tool payloads and max-output stops are visible failures, not successful turns', () => {
+  for (const ending of [
+    { stopReason: 'error', error: { message: 'OutputTruncated' } },
+    { stopReason: 'max_output_tokens' },
+  ]) {
+    const [item] = projector.itemsOf({ type: 'turn_end', messageId: 'm2', ...ending }, 5)
+    assert.equal(item.type, 'error')
+    assert.match(item.text, /response limit/)
+    assert.match(item.text, /last published preview is preserved/)
+  }
+})
+
 test('a message that joins the running turn is shown as part of that turn', () => {
   assert.deepEqual(
     projector.itemsOf({ type: 'user_message', messageId: 'm2', id: 'm3', text: '[Ada] make it teal' }, 5),

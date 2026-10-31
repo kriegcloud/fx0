@@ -46,6 +46,31 @@ const secure = await import('../lib/secure-session.ts')
 const auth = await import('../lib/auth.ts')
 const { withRequestSession } = await import('../lib/request-session.ts')
 const { withChatRoute, withUserRoute } = await import('../lib/route-auth.ts')
+
+test('production workstation POST accepts only its configured loopback origin', async (t) => {
+  const previous = { ...process.env }
+  t.after(() => { process.env = previous })
+  Object.assign(process.env, { NODE_ENV: 'production', FX0_LOCAL: '1', APP_URL: 'http://127.0.0.1:3000' })
+  delete process.env.VERCEL
+  const request = origin => new Request('http://127.0.0.1:3000/api/model', {
+    method: 'POST', headers: { host: '127.0.0.1:3000', ...(origin ? { origin } : {}) },
+  })
+  assert.doesNotThrow(() => protocol.assertSameOrigin(request(process.env.APP_URL)))
+  const route = withUserRoute(async () => Response.json({ ok: true }))
+  assert.equal((await route(request(process.env.APP_URL))).status, 200)
+  for (const origin of [undefined, 'https://evil.example', 'http://127.0.0.1:3001']) {
+    assert.throws(() => protocol.assertSameOrigin(request(origin)))
+    assert.equal((await route(request(origin))).status, 403)
+  }
+  for (const override of ['http://evil.example', 'http://127.0.0.1:3001']) {
+    assert.throws(() => protocol.assertSameOrigin(request(override), override))
+  }
+  process.env.FX0_LOCAL = '0'
+  assert.throws(() => protocol.assertSameOrigin(request(process.env.APP_URL)), /trusted HTTP/)
+  process.env.FX0_LOCAL = '1'
+  process.env.VERCEL = '1'
+  assert.throws(() => protocol.assertSameOrigin(request(process.env.APP_URL)), /loopback HTTP APP_URL outside Vercel/)
+})
 const noRevocations = () => ({ ids: new Set(), checks: [], fail: false })
 globalThis.__revokedLogins = noRevocations()
 // Logins sign-out has revoked, for one test.

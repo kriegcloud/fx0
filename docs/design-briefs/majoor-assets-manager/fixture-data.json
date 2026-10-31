@@ -1,0 +1,288 @@
+{
+  "notice": "Entirely fictional design fixtures. No real files, user media, private prompts or production records. Paths are illustrative labels, not read targets. All operations are simulated.",
+  "sources": [
+    {
+      "id": "output",
+      "label": "Outputs",
+      "path": "/demo/comfy/output",
+      "available": true,
+      "watching": true
+    },
+    {
+      "id": "input",
+      "label": "Inputs",
+      "path": "/demo/comfy/input",
+      "available": true,
+      "watching": false
+    },
+    {
+      "id": "external-a",
+      "label": "Studio character studies",
+      "path": "/demo/external/characters/sample-character/GENERATIONS",
+      "available": true,
+      "watching": false
+    },
+    {
+      "id": "external-b",
+      "label": "Archive drive",
+      "path": "/demo/archive/GENERATIONS",
+      "available": false,
+      "watching": false
+    }
+  ],
+  "collections": [
+    {
+      "id": "col-1",
+      "name": "Lighting studies",
+      "assetKeys": [
+        "img-01",
+        "img-02"
+      ]
+    },
+    {
+      "id": "col-2",
+      "name": "Shortlist",
+      "assetKeys": [
+        "vid-01"
+      ]
+    },
+    {
+      "id": "col-3",
+      "name": "Next experiments",
+      "assetKeys": []
+    }
+  ],
+  "assets": [
+    {
+      "key": "img-01",
+      "name": "studio-light-study-001.png",
+      "kind": "image",
+      "sourceId": "output",
+      "relativePath": "studio-light-study-001.png",
+      "width": 1536,
+      "height": 1024,
+      "durationSeconds": null,
+      "rating": 4,
+      "tags": [
+        "warm light",
+        "study"
+      ],
+      "workflow": "ui-graph",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL.",
+      "stackId": "stack-01"
+    },
+    {
+      "key": "img-02",
+      "name": "studio-light-study-002.png",
+      "kind": "image",
+      "sourceId": "output",
+      "relativePath": "studio-light-study-002.png",
+      "width": 1536,
+      "height": 1024,
+      "durationSeconds": null,
+      "rating": 3,
+      "tags": [
+        "cool light",
+        "study"
+      ],
+      "workflow": "ui-graph",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL.",
+      "stackId": "stack-01"
+    },
+    {
+      "key": "img-03",
+      "name": "unlabeled-result-with-a-very-long-filename-for-truncation-testing.png",
+      "kind": "image",
+      "sourceId": "output",
+      "relativePath": "unlabeled-result-with-a-very-long-filename-for-truncation-testing.png",
+      "width": 1024,
+      "height": 1536,
+      "durationSeconds": null,
+      "rating": 0,
+      "tags": [],
+      "workflow": "absent",
+      "metadata": "partial",
+      "preview": "ready",
+      "enrichment": "not-indexed",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "img-04",
+      "name": "execution-only-layout-unavailable.png",
+      "kind": "image",
+      "sourceId": "external-a",
+      "relativePath": "execution-only-layout-unavailable.png",
+      "width": 1024,
+      "height": 1024,
+      "durationSeconds": null,
+      "rating": 5,
+      "tags": [
+        "reference"
+      ],
+      "workflow": "api-graph",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "vid-01",
+      "name": "moving-light-001.mp4",
+      "kind": "video",
+      "sourceId": "output",
+      "relativePath": "moving-light-001.mp4",
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 8.4,
+      "rating": 4,
+      "tags": [
+        "motion"
+      ],
+      "workflow": "ui-graph",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "vid-02",
+      "name": "unsupported-codec-demo.mov",
+      "kind": "video",
+      "sourceId": "output",
+      "relativePath": "unsupported-codec-demo.mov",
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 12,
+      "rating": 0,
+      "tags": [],
+      "workflow": "unknown",
+      "metadata": "partial",
+      "preview": "unsupported",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "aud-01",
+      "name": "ambient-texture.wav",
+      "kind": "audio",
+      "sourceId": "input",
+      "relativePath": "ambient-texture.wav",
+      "width": null,
+      "height": null,
+      "durationSeconds": 34,
+      "rating": 2,
+      "tags": [
+        "ambient"
+      ],
+      "workflow": "absent",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "mesh-01",
+      "name": "ceramic-shape.glb",
+      "kind": "model3d",
+      "sourceId": "input",
+      "relativePath": "ceramic-shape.glb",
+      "width": null,
+      "height": null,
+      "durationSeconds": null,
+      "rating": 4,
+      "tags": [
+        "object"
+      ],
+      "workflow": "absent",
+      "metadata": "ready",
+      "preview": "ready",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "img-05",
+      "name": "archived-study.png",
+      "kind": "image",
+      "sourceId": "external-b",
+      "relativePath": "archived-study.png",
+      "width": 1024,
+      "height": 1024,
+      "durationSeconds": null,
+      "rating": 5,
+      "tags": [
+        "archive"
+      ],
+      "workflow": "ui-graph",
+      "metadata": "ready",
+      "preview": "missing",
+      "enrichment": "ready",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    },
+    {
+      "key": "img-06",
+      "name": "metadata-pending.png",
+      "kind": "image",
+      "sourceId": "output",
+      "relativePath": "metadata-pending.png",
+      "width": 1024,
+      "height": 1024,
+      "durationSeconds": null,
+      "rating": 0,
+      "tags": [],
+      "workflow": "unknown",
+      "metadata": "loading",
+      "preview": "ready",
+      "enrichment": "not-indexed",
+      "illustration": "Use inline SVG/CSS abstract still-life, light study or kind-specific illustration; no external URL."
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wf-01",
+      "name": "Studio light study",
+      "task": "Text to image",
+      "modelFamily": "Synthetic model A",
+      "category": "Studio",
+      "favorite": true,
+      "nodeCount": 18,
+      "missingNodes": 0,
+      "missingModels": 0,
+      "versions": 2
+    },
+    {
+      "id": "wf-02",
+      "name": "Motion experiment",
+      "task": "Image to video",
+      "modelFamily": "Synthetic model B",
+      "category": "Motion",
+      "favorite": false,
+      "nodeCount": 29,
+      "missingNodes": 2,
+      "missingModels": 1,
+      "versions": 1
+    }
+  ],
+  "scenarioIds": [
+    "initial-empty",
+    "filtered-empty",
+    "offline-source",
+    "partial-metadata",
+    "no-workflow",
+    "api-only-workflow",
+    "read-only",
+    "ai-degraded",
+    "partial-export",
+    "partial-delete",
+    "running-generation",
+    "popup-blocked",
+    "dirty-canvas",
+    "decode-error"
+  ],
+  "mockBoundary": "Run, Stop, Open workflow, file operations and model downloads must produce local simulation feedback only."
+}

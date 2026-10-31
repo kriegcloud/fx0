@@ -6,9 +6,10 @@ import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { createClient } from 'redis'
-import { parse } from 'yaml'
+import { readProxyKey } from './proxy-key.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
+const nextCommand = process.argv.includes('--production') ? 'start' : 'dev'
 process.chdir(root)
 const data = path.resolve(process.env.FX0_LOCAL_DATA_DIR || '.local')
 await mkdir(data, { recursive: true, mode: 0o700 })
@@ -20,13 +21,7 @@ try { secret = await readFile(secretPath, 'utf8') } catch (error) {
   await writeFile(secretPath, secret, { mode: 0o600, flag: 'wx' })
 }
 
-const proxyConfig = process.env.FX0_PROXY_CONFIG || path.join(homedir(), '.cli-proxy-api/config.yaml')
-let apiKey = process.env.FX0_PROXY_API_KEY
-if (!apiKey) {
-  const config = parse(await readFile(proxyConfig, 'utf8'))
-  apiKey = config['api-keys']?.find(key => typeof key === 'string')
-  if (!apiKey) throw new Error('Set FX0_PROXY_API_KEY or supply a CLIProxyAPI config with api-keys')
-}
+const apiKey = await readProxyKey()
 const baseUrl = process.env.FX0_PROXY_BASE_URL || 'http://127.0.0.1:8317/v1'
 const url = new URL(baseUrl)
 if (url.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) {
@@ -125,11 +120,12 @@ try {
     SESSION_SECRET: secret, FX_SESSIONS_DIR: path.join(data, 'sessions'), FX0_PROXY_BASE_URL: baseUrl, FX0_PROXY_API_KEY: apiKey,
     FX0_MODEL: model, FX0_EFFORT: process.env.FX0_EFFORT || 'medium', FX0_FREE_PROMPTS: '0',
     FX0_REFERENCE_ROOTS: process.env.FX0_REFERENCE_ROOTS || JSON.stringify([homedir()]),
+    FX0_WORKSTATION_TOOLS: process.env.FX0_WORKSTATION_TOOLS || '1',
     FX0_LOCAL_DATA_DIR: data, FX0_REDIS_PREFIX: 'fx0:local',
     KV_REST_API_URL: `http://127.0.0.1:${bridge.address().port}`, KV_REST_API_TOKEN: restToken,
   }
   console.log(`fx0 workstation: ${env.APP_URL} → CLIProxyAPI (${model}, ${env.FX0_EFFORT})`)
-  child(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', '--port', port], { env })
+  child(process.execPath, ['node_modules/next/dist/bin/next', nextCommand, '--hostname', '127.0.0.1', '--port', port], { env })
 } catch (error) {
   console.error(error instanceof Error ? error.message.replaceAll(apiKey, '[redacted]') : 'Local startup failed')
   await shutdown(1)

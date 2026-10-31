@@ -20,10 +20,14 @@
     "test:trial:integration": "node --experimental-strip-types --test tests/trial.integration.mjs",
     "test:credential:integration": "node --experimental-strip-types --test tests/turn-credential.integration.mjs",
     "dev:local": "node --env-file-if-exists=.env.local scripts/local-dev.mjs",
-    "test:local": "node --experimental-strip-types --test tests/local-mode.test.mjs tests/reference-files.test.mjs"
+    "start:local": "node --env-file-if-exists=.env.local scripts/local-dev.mjs --production",
+    "install:desktop": "node scripts/install-desktop.mjs",
+    "test:local": "node --experimental-strip-types --test tests/local-mode.test.mjs tests/local-models.test.mjs tests/proxy-key.test.mjs tests/reference-files.test.mjs tests/workstation-tools.test.mjs tests/workstation-mcp.test.mjs tests/output-recovery.test.mjs tests/kimi-vision.test.mjs",
+    "test:output:browser": "node tests/output-recovery.browser.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-popover": "^1.1.23",
@@ -46,6 +50,7 @@
     "react-markdown": "^10.1.0",
     "redis": "^6.3.0",
     "remark-gfm": "^4.0.1",
+    "smol-toml": "^1.9.1",
     "yaml": "^2.9.1"
   },
   "engines": {

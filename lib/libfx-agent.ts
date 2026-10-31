@@ -1,4 +1,5 @@
 import { localMode, proxyOptions } from './local-mode'
+import { generationErrorMessage } from './output-recovery'
 import { createHash, randomUUID } from 'node:crypto'
 import { createFxAgent, createFxEngine, type FxAgent, type FxAgentHostTool, type FxEffort, type FxHostTool, type FxSession, type FxToolContext } from 'libfx'
 import { createTools, type ToolHost } from './tools'
@@ -195,8 +196,8 @@ function chatTools(runtime: ChatRuntime, allowSubagent: boolean): FxAgentHostToo
   const definitions = createTools(templateHost, { allowSubagent })
   return definitions.map((definition) => ({
     ...definition,
-    idempotent: IDEMPOTENT.has(definition.name),
-    writes: WRITES.has(definition.name),
+    idempotent: definition.idempotent ?? IDEMPOTENT.has(definition.name),
+    writes: definition.writes ?? WRITES.has(definition.name),
     async execute(input: unknown, ctx: FxToolContext) {
       const { chatId, turnId } = turnContext(ctx)
       const host = await runtime.toolHost(chatId, turnId, ctx.signal)
@@ -315,6 +316,7 @@ export async function runSubagent(
       if (event.type === 'text_delta') text += event.delta
     }
     const result = await turn.result
+    if (result.stopReason === 'max_output_tokens') throw new Error(generationErrorMessage('max_output_tokens'))
     if (result.stopReason === 'refused') throw new Error('the model refused the task')
     return text || '(subagent finished with no text output; check its tool calls above)'
   } finally {

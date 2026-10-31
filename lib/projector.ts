@@ -1,4 +1,5 @@
 import type { FxAgent, FxStreamLine } from 'libfx'
+import { generationErrorMessage } from './output-recovery'
 import { tail } from './tools'
 import {
   finishTurnWork,
@@ -81,9 +82,10 @@ export function itemsOf(line: FxStreamLine, at: number): Entry[] {
     case 'tool_end':
       return [{ type: 'tool_end', name: line.name || 'tool', isError: line.isError === true, content: typeof line.content === 'string' ? tail(line.content) : undefined, toolCallId: line.id, turnId: id, at }]
     case 'turn_end': {
-      const failed = line.stopReason === 'error' || line.stopReason === 'unknown' || (line.stopReason === 'refused' && line.error?.message)
+      const truncated = line.stopReason === 'max_output_tokens'
+      const failed = truncated || line.stopReason === 'error' || line.stopReason === 'unknown' || (line.stopReason === 'refused' && line.error?.message)
       return [failed
-        ? { type: 'error', id, turnId: id, text: line.error?.message || 'This message did not finish. Resend to retry.', at }
+        ? { type: 'error', id, turnId: id, text: generationErrorMessage(truncated ? 'max_output_tokens' : line.error?.message), at }
         : { type: 'done', id, turnId: id, stopReason: line.stopReason, usage: line.usage as StreamItem['usage'], at }]
     }
     default:

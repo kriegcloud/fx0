@@ -6,6 +6,7 @@ import Markdown from './markdown'
 import { AuthRouteError, fetchUi } from './auth-ui'
 import { formatDuration } from './tool-widget'
 import { fastClick } from '../lib/fast-click'
+import { generationErrorMessage } from '../lib/output-recovery'
 
 function QuestionWidget({ entry, sessionId }: { entry: ChatEntry; sessionId: string }) {
   const groupId = useId()
@@ -235,7 +236,7 @@ const renderers: Record<string, (entry: ChatEntry, waiting: string | null, sessi
   ),
   error: (entry) => (
     <div role="alert" className="my-2 bg-error/10 px-3 py-2 text-sm leading-5 text-error">
-      {entry.text}
+      {generationErrorMessage(entry.text)}
     </div>
   ),
   divider: (entry) => (

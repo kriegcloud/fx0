@@ -6,6 +6,7 @@ import { ThreadEntry, type ChatEntry } from './thread'
 import { ActivityGroup } from './tool-widget'
 import { fastClick } from '../lib/fast-click'
 import { Skeleton } from './ui/skeleton'
+import { canRecoverOutput, OUTPUT_RECOVERY_PROMPT } from '../lib/output-recovery'
 
 const SUGGESTIONS = [
   'Design a landing page for a CLI coding agent',
@@ -90,6 +91,15 @@ export default memo(function Transcript({ sessionId, entries, activeTurnId, star
           waiting={waitingLabel(row.entry, entries, activeTurnId, started, drafting)}
         />
       ))}
+      {canRecoverOutput(entries, activeTurnId) && (
+        <button
+          type="button"
+          {...fastClick(() => onSend(OUTPUT_RECOVERY_PROMPT))}
+          className="mb-3 rounded border border-border px-3 py-2 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Continue in smaller steps
+        </button>
+      )}
     </>
   )
 })
