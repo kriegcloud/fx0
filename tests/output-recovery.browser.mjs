@@ -43,7 +43,9 @@ try{
  cdp=await connectCdp(targets.find(x=>x.type==='page').webSocketDebuggerUrl,errors)
  await cdp.call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
  await cdp.call('Page.navigate',{url:base})
- await until(()=>cdp.evaluate('!!document.querySelector("textarea")'),'composer')
+ // The server-rendered composer appears before hydration and model preferences.
+ // Wait for its ready state before interacting so the first click is not lost.
+ await until(()=>cdp.evaluate('!!document.querySelector("textarea") && !!document.querySelector(\'button[aria-label="Model: gpt-6.1-sol"][aria-busy="false"]\')'),'composer ready')
  await cdp.evaluate(`[...document.querySelectorAll('button')].find(x=>x.textContent.includes('gpt-6.1-sol')).click()`)
  await until(()=>cdp.evaluate(`[...document.querySelectorAll('button')].some(x=>x.textContent.includes('Kimi K3.1 Pro'))`),'model selector')
  await cdp.evaluate(`[...document.querySelectorAll('button')].find(x=>x.textContent.includes('Kimi K3.1 Pro')).click()`)
