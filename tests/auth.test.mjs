@@ -614,6 +614,25 @@ test('terminal invalid_grant clears current request and browser, without droppin
   assert.ok(handledRequests.has(response))
 })
 
+test('renewal logs link a rejected refresh token to the exchange that rotated it, without credentials', async (t) => {
+  const tag = (value) => createHash('sha256').update(value).digest('hex').slice(0, 10)
+  const logged = []
+  for (const level of ['info', 'error']) t.mock.method(console, level, (line) => logged.push(JSON.parse(line)))
+  const results = [() => Response.json(tokenResponse()), () => Response.json({ error: 'invalid_grant' }, { status: 400 })]
+  mockRefreshNetwork(t, () => results.shift()())
+  await requestSession(await requestWithSession('/api/prompt', session({ refreshToken: 'trail-refresh' })))
+  await requestSession(await requestWithSession('/api/prompt', session({ refreshToken: 'rotated-refresh' })))
+  const trail = logged.filter(({ event }) => event.startsWith('auth:')).map(({ at, sessionAgeS, accessExpiresInS, ...rest }) => rest)
+  const ids = { user: tag('verified-sub'), login: tag(session().loginId) }
+  assert.deepEqual(trail, [
+    { event: 'auth:refresh:exchanged', rt: tag('trail-refresh'), next: tag('rotated-refresh'), expiresIn: tokenResponse().expires_in },
+    { event: 'auth:session:renewed', ...ids, rt: tag('trail-refresh') },
+    { event: 'auth:refresh:rejected', rt: tag('rotated-refresh'), status: 400, error: 'invalid_grant' },
+    { event: 'auth:session:ended', ...ids, rt: tag('rotated-refresh') },
+  ])
+  assert.doesNotMatch(JSON.stringify(logged), /trail-refresh|rotated-refresh|rotated-access|verified-sub|user@example/)
+})
+
 test('transient refresh preserves cookie; known-expired credentials do not reach the handler', async (t) => {
   mockRefreshNetwork(t, () => Response.json({ error: 'temporarily_unavailable' }, { status: 503 }))
   const live = await requestSession(await requestWithSession('/api/prompt', session({ refreshToken: 'proxy-transient-live' })))

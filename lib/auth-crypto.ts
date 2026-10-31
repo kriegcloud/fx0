@@ -8,6 +8,11 @@ export function hashHandle(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
+// Short one-way tag that links log lines for one user, login or refresh token.
+export function logTag(value: string): string {
+  return hashHandle(value).slice(0, 10)
+}
+
 export function pkceChallenge(verifier: string): string {
   return createHash('sha256').update(verifier).digest('base64url')
 }

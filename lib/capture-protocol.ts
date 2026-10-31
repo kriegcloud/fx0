@@ -82,6 +82,14 @@ export const CAPTURE_PAINT_MS = 15_000
 export const CAPTURE_WAIT_MS = CAPTURE_PREVIEW_START_MS + CAPTURE_PAINT_MS + CAPTURE_TAB_MS + 5_000
 /** The hidden copy's viewport, when no preview is on screen. */
 export const CAPTURE_VIEWPORT = { width: 1280, height: 800 }
+/** The viewport widths a capture may ask for, in CSS px. */
+export const CAPTURE_WIDTH = { min: 320, max: 1920 } as const
+
+/** A requested capture width, rounded into CAPTURE_WIDTH; undefined when none was asked. */
+export function captureWidth(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return Math.min(CAPTURE_WIDTH.max, Math.max(CAPTURE_WIDTH.min, Math.round(value)))
+}
 
 /** What the tool call measured itself, on the turn's server clock. */
 interface ServerTiming {

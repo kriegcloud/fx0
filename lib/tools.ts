@@ -7,8 +7,12 @@ import { workstationMcpTools } from './workstation-mcp.ts'
 import type { FxHostTool, FxToolResult } from 'libfx'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { fetchPublicText } from './public-fetch.ts'
+// @ts-expect-error Node strip-types tests require the source extension.
+import { CAPTURE_WIDTH, captureWidth } from './capture-protocol.ts'
 
 const MAX_TOOL_OUTPUT = 32 * 1024
+export const VERIFY_REMINDER =
+  'If the user asked to implement, replicate, or match a design, page, or site, call screenshot_design now and compare it before replying.'
 
 export interface ToolHost {
   /** Copies a validated local image into this chat and returns its immutable asset reference. */
@@ -21,7 +25,7 @@ export interface ToolHost {
   /** A photo of the published design from an open fx0 tab; throws when none sends one in time. */
   captureDesign(
     signal: AbortSignal,
-    options?: { toolCallId?: string; full?: boolean },
+    options?: { toolCallId?: string; full?: boolean; width?: number },
   ): Promise<{ images: { mimeType: string; data: string }[]; revision: number; width?: number; height?: number; truncated?: boolean }>
   log(event: string, detail?: Record<string, unknown>): void
   spawnSubagent(task: string, signal: AbortSignal): Promise<string>
@@ -92,7 +96,9 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
     },
     async execute(input: { html: string }) {
       host.reportInvocation('publish_design')
-      return host.publishDesign(input.html)
+      const result = await host.publishDesign(input.html)
+      // A rule in the instructions alone was skipped; the reminder lands where the model decides to reply.
+      return result.ok && result.changed ? { ...result, next: VERIFY_REMINDER } : result
     },
   }
 
@@ -132,18 +138,27 @@ export function createTools(host: ToolHost, opts: { allowSubagent?: boolean } = 
   const screenshotDesign: FxHostTool = {
     name: 'screenshot_design',
     description:
-      'Screenshot the published design as the preview renders it, at the size the user sees it (1280x800 when the preview is closed). By default it shows the visible viewport; set full_page to see the whole page, top to bottom, in viewport-high images (at most 8). Use it to check the result when appearance matters, such as matching a reference or a layout you cannot verify from the markup, not after every edit; use full_page when the sections below the first screen matter. Needs an fx0 tab open and in front; on failure, continue without it.',
+      'Screenshot the published design as the preview renders it, at the size the user sees it (1280x800 when the preview is closed). By default it shows the visible viewport; set full_page to see the whole page, top to bottom, in viewport-high images (at most 8). Use it after publishing when the user asks to implement, replicate, or match a design, page, or site (from an image, a URL, or a description) or the layout cannot be verified from the markup; skip it for copy, color, or other small edits. Use full_page when the sections below the first screen matter. Needs an fx0 tab open and in front; on failure, continue without it.',
     inputSchema: {
       type: 'object',
-      properties: { full_page: { type: 'boolean', description: 'Whole page in viewport-high images instead of the visible viewport.' } },
+      properties: {
+        full_page: { type: 'boolean', description: 'Whole page in viewport-high images instead of the visible viewport.' },
+        width: {
+          type: 'integer',
+          minimum: CAPTURE_WIDTH.min,
+          maximum: CAPTURE_WIDTH.max,
+          description: 'Viewport width in CSS px. Set it to the width a reference was made at, so both show the same layout: a 2880-pixel-wide 2x screenshot is 1440. Without it, the width the user sees.',
+        },
+      },
       additionalProperties: false,
     },
-    async execute(input: { full_page?: boolean }, { signal, executionId }): Promise<FxToolResult | { error: string }> {
+    async execute(input: { full_page?: boolean; width?: number }, { signal, executionId }): Promise<FxToolResult | { error: string }> {
       host.reportInvocation('screenshot_design')
       const full = input?.full_page === true
+      const width = captureWidth(input?.width)
       const t0 = Date.now()
       try {
-        const shot = await host.captureDesign(signal, { toolCallId: executionId, full })
+        const shot = await host.captureDesign(signal, { toolCallId: executionId, full, ...(width ? { width } : {}) })
         const base64Bytes = shot.images.reduce((sum, image) => sum + image.data.length, 0)
         host.log('tool:screenshot_design:done', { ms: Date.now() - t0, revision: shot.revision, images: shot.images.length, base64Bytes })
         const size = `${shot.width ?? '?'}x${shot.height ?? '?'} CSS px`

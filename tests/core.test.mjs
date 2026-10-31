@@ -26,7 +26,7 @@ import {
   upsertSession,
   waitingLabel,
 } from '../components/chat-state.ts'
-import { createTools } from '../lib/tools.ts'
+import { createTools, VERIFY_REMINDER } from '../lib/tools.ts'
 import { featuredModels } from '../lib/featured-models.ts'
 import { designLinkUrl, MAX_DESIGN_LINK_LENGTH } from '../lib/design-link.ts'
 
@@ -106,6 +106,16 @@ test('the featured models are the newest of each featured family, in that order'
   assert.deepEqual(featured, ['openai/gpt-6.1-sol', 'anthropic/claude-opus-5.5', 'deepseek/deepseek-v4-pro'])
 })
 
+test('a changed publish reminds the agent to screenshot before replying, and only a changed one', async () => {
+  const publish = (result) => createTools({ ...toolHost(), publishDesign: async () => result })
+    .find((tool) => tool.name === 'publish_design').execute({ html: SAFE_DESIGN })
+  assert.deepEqual(await publish({ ok: true, revision: 1, changed: true }), { ok: true, revision: 1, changed: true, next: VERIFY_REMINDER })
+  assert.match(VERIFY_REMINDER, /implement, replicate, or match .* call screenshot_design now/)
+  assert.deepEqual(await publish({ ok: true, revision: 1, changed: false }), { ok: true, revision: 1, changed: false })
+  const rejected = { ok: false, reason: 'invalid', error: 'missing doctype' }
+  assert.deepEqual(await publish(rejected), rejected)
+})
+
 test('design mode exposes only design and common host tools', async () => {
   const host = toolHost()
   const tools = createTools(host)
@@ -143,6 +153,10 @@ test('screenshot_design gives the model its images with what they show, or why t
   assert.deepEqual(calls, [{ toolCallId: 'call_9', full: true }])
   assert.deepEqual(page.images, [{ type: 'image', mimeType: 'image/webp', data: 'AAAA' }, { type: 'image', mimeType: 'image/webp', data: 'BBBB' }])
   assert.equal(page.text, 'Full-page screenshot of design revision 3, 1280x2400 CSS px, in 2 viewport-high images, top to bottom. The page continues below the last image.')
+  // A width asks for that viewport, rounded into range; none leaves the preview's own.
+  calls.length = 0
+  for (const width of [1440, 1439.6, 4000, 10]) await screenshot.execute({ width }, { signal, executionId: 'call_w' })
+  assert.deepEqual(calls.map((call) => call.width), [1440, 1440, 1920, 320])
   const failing = createTools({ ...toolHost(), captureDesign: async () => { throw new Error('no fx0 tab is open and in front to take it') } })
   assert.deepEqual(await failing.find((tool) => tool.name === 'screenshot_design').execute({}, { signal, executionId: 'call_10' }),
     { error: 'screenshot unavailable: no fx0 tab is open and in front to take it' })

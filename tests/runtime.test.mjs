@@ -385,6 +385,16 @@ test('a chat started with a DESIGN.md carries it in the instructions of every pr
   assert.match(f.sent[0].sessionOptions.instructions, /<design_md>\nUse teal\.\n<\/design_md>/)
 })
 
+test('the instructions make the agent screenshot its design when implementing or replicating one', async (t) => {
+  const f = fixture(t)
+  await runtime.submitPrompt(boundHost('reference-chat'), 'Ada', 'Reimplement this exactly')
+  const { instructions } = f.sent[0].sessionOptions
+  assert.match(instructions, /asks to implement, replicate, recreate, clone, or match a design, page, or site, whether from an attached image, a URL, or a description, or asks for an exact copy, verify before reporting: after publishing, call screenshot_design/)
+  assert.match(instructions, /at the width the reference was made at when there is one/)
+  const tool = f.agentOptions.tools.find((candidate) => candidate.name === 'screenshot_design')
+  assert.match(tool.description, /asks to implement, replicate, or match a design, page, or site \(from an image, a URL, or a description\)/)
+})
+
 test('image messages use prompt admission and retain their images, identity and chat context', async (t) => {
   const f = fixture(t)
   const host = boundHost('image-chat')
@@ -666,6 +676,26 @@ test('the projector copies a turn once however many follow it, then records its 
   assert.equal(history[0][1].response, 'Making it teal.')
   assert.equal(history[0][1].billingTeamId, 'team_a')
   assert.deepEqual(f.calls.filter((call) => call[0] === 'generation').map((call) => call.slice(1, 4)), [['project-chat', 3, 4]])
+})
+
+test('the projector commits a line after a quiet spell at once and batches the lines right behind it', async (t) => {
+  const f = fixture(t, { libfxSessionId: 'wrun_quick', preferredModel: null, preferredEffort: null, preferredFast: null })
+  const host = boundHost('quick-chat')
+  const log = f.logOf('wrun_quick')
+  const following = projector.project(runtime.agent(), host, 'wrun_quick', { idleMs: 200 })
+  log.push({ type: 'turn_start', messageId: 'm1', sessionId: 'wrun_quick', input: '[Ada] Hi' })
+  await until(() => f.events.some((item) => item.type === 'turn_start'), 'turn start')
+  await new Promise((resolve) => setTimeout(resolve, 60))
+  const pushed = performance.now()
+  log.push({ type: 'text_delta', messageId: 'm1', delta: 'Hel' })
+  await until(() => f.events.some((item) => item.type === 'text'), 'first text')
+  assert.ok(performance.now() - pushed < 30, 'the first text does not wait out a batch window')
+  log.push({ type: 'text_delta', messageId: 'm1', delta: 'lo' })
+  log.push({ type: 'text_delta', messageId: 'm1', delta: ' there' })
+  log.push({ type: 'turn_end', messageId: 'm1', stopReason: 'end_turn' })
+  await following
+  assert.deepEqual(f.events.filter((item) => item.type === 'text').map((item) => item.delta), ['Hel', 'lo there'])
+  assert.deepEqual(f.events.map((item) => item.seq), f.events.map((_, index) => index + 1), 'each item lands once, in order')
 })
 
 test('a turn\'s history waits when the database fails, and a later follower writes it once', async (t) => {

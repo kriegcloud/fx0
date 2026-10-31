@@ -21,7 +21,7 @@
         "geist": "^1.7.2",
         "iron-session": "^9.0.1",
         "jose": "^6.2.12",
-        "libfx": "0.0.14",
+        "libfx": "0.0.15",
         "next": "^16.4.2",
         "next-themes": "^0.4.6",
         "react": "19.2.4",
@@ -513,7 +513,7 @@
 
     "json-schema-typed": ["json-schema-typed@8.0.2", "", {}, "sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA=="],
 
-    "libfx": ["libfx@0.0.14", "", {}, "sha512-8wIEkRlKuQnbueyt6NBwi4xEiEnoRpwvAocKolzzmyz/r14s4gXiE3XivGk4QJpNnMMGHAJRKlH0WhW//q7B5Q=="],
+    "libfx": ["libfx@0.0.15", "", {}, "sha512-/m0eeTxPYvuPMG7afKn65kwryfkCehGkwvyEh6LCVBXzNSTSdYIO9o0y0FluzPUgt15xVneMdMiViko4spMP0A=="],
 
     "lightningcss": ["lightningcss@1.32.0", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-android-arm64": "1.32.0", "lightningcss-darwin-arm64": "1.32.0", "lightningcss-darwin-x64": "1.32.0", "lightningcss-freebsd-x64": "1.32.0", "lightningcss-linux-arm-gnueabihf": "1.32.0", "lightningcss-linux-arm64-gnu": "1.32.0", "lightningcss-linux-arm64-musl": "1.32.0", "lightningcss-linux-x64-gnu": "1.32.0", "lightningcss-linux-x64-musl": "1.32.0", "lightningcss-win32-arm64-msvc": "1.32.0", "lightningcss-win32-x64-msvc": "1.32.0" } }, ""],
 

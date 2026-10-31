@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { del, get, list, put } from '@vercel/blob'
+import type { del, get, list, put } from '@vercel/blob'
 // @ts-expect-error Node strip-types tests require the source extension.
 import { localMode } from './local-mode.ts'
 // @ts-expect-error Node strip-types tests require the source extension.
@@ -22,7 +22,16 @@ export interface DesignAssetStore {
   list(options: { prefix: string; cursor?: string; limit: number }): Promise<{ blobs: { pathname: string }[]; hasMore: boolean; cursor?: string }>
 }
 
-const BLOB: DesignAssetStore = { put, get, del, list }
+// @vercel/blob carries its own undici, jose and the Vercel OIDC client (~0.6 MB), so it
+// loads on the first Blob call: routes that import this module cold-start without it.
+let blob: Promise<typeof import('@vercel/blob')> | undefined
+const loadBlob = () => blob ??= import('@vercel/blob')
+const BLOB: DesignAssetStore = {
+  put: async (...args) => (await loadBlob()).put(...args),
+  get: async (...args) => (await loadBlob()).get(...args),
+  del: async (...args) => (await loadBlob()).del(...args),
+  list: async (...args) => (await loadBlob()).list(...args),
+}
 
 function assetStore(): DesignAssetStore {
   return localMode() ? localDesignAssetStore() : BLOB

@@ -38,6 +38,7 @@ import DesignExport from './design-export'
 import { Skeleton } from './ui/skeleton'
 import PreviewPane, { type PreviewSource } from './preview-pane'
 import DesignCapture, { acknowledgeCapture, type CaptureRequest } from './design-capture'
+import { captureWidth } from '../lib/capture-protocol'
 import Sidebar from './sidebar'
 import SidebarGestures, { type SidebarGestureControls } from './sidebar-gestures'
 import { Button } from './ui/button'
@@ -739,7 +740,12 @@ export default function ChatApp({ account, sidebar, boot, preference, defaultMod
       // longer open (an event replayed after a reconnect) answers false and is dropped.
       if (item.type === 'capture') {
         if (item.cid && document.visibilityState === 'visible') {
-          const request: CaptureRequest = { cid: item.cid, sessionId: sourceSessionId, revision: item.artifactRevision ?? 0, full: item.captureFull === true, receivedAt: Date.now() }
+          // A requested width goes to the hidden copy at that width: the preview shows its own.
+          const width = captureWidth(item.captureWidth)
+          const request: CaptureRequest = {
+            cid: item.cid, sessionId: sourceSessionId, revision: item.artifactRevision ?? 0, full: item.captureFull === true, receivedAt: Date.now(),
+            ...(width ? { width, offscreen: true } : {}),
+          }
           setCaptureRequest(request)
           void acknowledgeCapture(request).then((open) => {
             if (!open) setCaptureRequest((current) => (current?.cid === request.cid ? null : current))

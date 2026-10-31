@@ -272,11 +272,16 @@ export async function project(agent: FxAgent, host: SessionState, libfxSessionId
     return true
   }
 
+  // Commits start at most once per BATCH_MS. A line after a quiet spell, such as a
+  // turn's first text, commits on the next tick with whatever its read brought;
+  // lines that follow inside the window wait for it and go together.
   let flushTimer: ReturnType<typeof setTimeout> | null = null
   let committing: Promise<boolean> = Promise.resolve(true)
+  let lastCommitAt = -Infinity
   const scheduleCommit = () => {
     flushTimer ??= setTimeout(() => {
       flushTimer = null
+      lastCommitAt = performance.now()
       committing = committing.then((ok) => (ok ? commit() : false)).catch((error) => {
         // Nothing committed: the next follower projects these lines again.
         log(host.id, 'projector:error', { error: errorText(error) })
@@ -285,7 +290,7 @@ export async function project(agent: FxAgent, host: SessionState, libfxSessionId
         if (!ok) stop()
         return ok
       })
-    }, BATCH_MS)
+    }, Math.max(0, lastCommitAt + BATCH_MS - performance.now()))
   }
 
   try {

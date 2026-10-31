@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { captureTrace } from '../lib/capture-protocol.ts'
+import { captureTrace, captureWidth } from '../lib/capture-protocol.ts'
+
+test('a capture width is rounded into range, and anything but a number asks for none', () => {
+  assert.deepEqual([1440, 1440.4, 100, 5000].map(captureWidth), [1440, 1440, 320, 1920])
+  assert.deepEqual([undefined, null, '1440', Number.NaN, Infinity].map(captureWidth), [undefined, undefined, undefined, undefined, undefined])
+})
 
 test('a capture trace splits the call into parts, and its network total survives a clock offset', () => {
   // The tab's clock runs 40 ms ahead of the servers'.

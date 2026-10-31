@@ -31,6 +31,8 @@ export interface CaptureRequest {
   revision: number
   // The whole page in viewport-high tiles instead of the visible viewport.
   full?: boolean
+  // The hidden copy's viewport width in CSS px, instead of CAPTURE_VIEWPORT's.
+  width?: number
   // The preview on screen could not answer, so the hidden copy does.
   offscreen?: boolean
 }
@@ -163,7 +165,7 @@ export default function DesignCapture({ request, onDone }: { request: CaptureReq
         referrerPolicy="no-referrer"
         tabIndex={-1}
         title="Design screenshot"
-        style={{ ...CAPTURE_VIEWPORT, border: 0 }}
+        style={{ ...CAPTURE_VIEWPORT, ...(request.width ? { width: request.width } : {}), border: 0 }}
       />
     </div>
   )

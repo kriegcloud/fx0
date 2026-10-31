@@ -60,6 +60,8 @@ export interface StreamItem {
   cid?: string
   /** A capture of the whole page in viewport-high tiles, not just the visible viewport. */
   captureFull?: true
+  /** A capture at this viewport width in CSS px, taken from the hidden copy instead of the preview. */
+  captureWidth?: number
   /** The model's id for a tool call, on its tool_end. */
   toolCallId?: string
   /** On a screenshot call's tool_end: time it spent waiting for the preview, not its own work. */

@@ -47,12 +47,24 @@ registerHooks({
         }
       `)}`, shortCircuit: true }
     }
+    if (specifier === '@vercel/blob' && context.parentURL?.endsWith('/lib/design-assets.ts')) {
+      return { url: `data:text/javascript,${encodeURIComponent(`
+        const j = globalThis.__assetJournal
+        j.blobLoaded = true
+        export async function put(...args) { j.blobCalls.push(['put', ...args]); return { pathname: args[0] } }
+        export async function get() { return null }
+        export async function del(...args) { j.blobCalls.push(['del', ...args]) }
+        export async function list() { return { blobs: [], hasMore: false } }
+      `)}`, shortCircuit: true }
+    }
     return next(specifier, context)
   },
 })
 
 process.env.SESSION_SECRET ??= 'deterministic-design-assets-test-secret-32+'
 const { storeDesignAssets, readDesignAsset, deleteDesignAssets, retryDesignAssetCleanup, DesignAssetLimitError } = await import('../lib/design-assets.ts')
+journal.blobCalls = []
+const blobLoadedOnImport = journal.blobLoaded === true
 const { validateDesignArtifactHtml, rewriteRemoteImages, BLANK_IMAGE } = await import('../lib/design-artifact.ts')
 const { markRemoteImages } = await import('../lib/remote-image.ts')
 const { artifactImageSrc, verifyArtifactImage } = await import('../lib/artifact-image.ts')
@@ -191,6 +203,18 @@ test('the chat and daily caps are taken before anything is stored, and given bac
   await assert.rejects(storeDesignAssets(CHAT, USER, [image, image], fakeStore({ failOn: 0 })), /Unable to store/)
   assert.deepEqual(calls.map((call) => call.slice(0, 4)), [['reserve', CHAT, USER, 2], ['release', CHAT, USER, 2]])
   assert.equal(calls[0][4], calls[1][4], 'the refund uses the reservation day')
+})
+
+test('the default Blob store loads @vercel/blob on first use, not on import', async () => {
+  assert.equal(blobLoadedOnImport, false)
+  await retryDesignAssetCleanup()
+  assert.equal(journal.blobLoaded, undefined, 'no pending cleanup, no Blob client')
+  const image = { type: 'image', data: PNG, mimeType: 'image/png' }
+  const [handle] = await storeDesignAssets(CHAT, USER, [image])
+  assert.equal(journal.blobLoaded, true)
+  const [[name, pathname, body, options]] = journal.blobCalls
+  assert.deepEqual([name, pathname, Buffer.from(body).toString('base64'), options],
+    ['put', `chats/${CHAT}/${handle}`, PNG, { access: 'private', contentType: 'image/png', addRandomSuffix: false }])
 })
 
 test('an image is read only for the chat that received it', async () => {

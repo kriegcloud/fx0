@@ -215,7 +215,7 @@ preview; artifact JavaScript cannot read files, run shell commands, or invoke MC
 - Every turn keeps its version of the design. You can reopen any of them and copy or download the HTML.
 - Pick each chat's model, with its reasoning effort and fast mode. New chats start on fast Claude Opus 5.5, or on `FX0_MODEL` when it's set.
 - The agent can search the web and fetch pages for reference.
-- Ask the agent to inspect its result: `screenshot_design` returns images of the published preview to the model, either the visible viewport or the full page in tiles.
+- Ask the agent to inspect its result: `screenshot_design` returns images of the published preview to the model, either the visible viewport or the full page in tiles. An optional `width` captures at that viewport width (320-1920 CSS px), so a design can be compared with a reference at the reference's own width rather than the preview's.
 - Start from one of ten `design.md` styles, or upload your own. The ten styles, and the one-line descriptions in the picker, come from VoltAgent's [awesome-design-md](https://github.com/VoltAgent/awesome-design-md), which you can browse at [getdesign.md](https://getdesign.md). Thanks to VoltAgent for publishing them.
 - Type a message before you sign in. The draft, images included, waits in the tab for 15 minutes while you sign in.
 - A turn stops after 64 model steps, its subagents' included, which keeps an agent stuck in a loop from running up a bill.

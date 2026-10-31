@@ -19,6 +19,12 @@ export function logAuthFailure(event: string, error: unknown): void {
   console.error(JSON.stringify({ at: new Date().toISOString(), event, error: message }))
 }
 
+// Login, renewal and sign-out trail. Values are logTag hashes, statuses and
+// OAuth error codes, never credentials or provider bodies.
+export function logAuth(event: string, detail: Record<string, unknown> = {}, level: 'info' | 'error' = 'info'): void {
+  console[level](JSON.stringify({ at: new Date().toISOString(), event, ...detail }))
+}
+
 // Without a trusted origin there is nothing safe to put in an absolute URL, so the
 // browser resolves this against the address it already requested.
 export const SIGN_IN_UNAVAILABLE_PATH = '/login?error=signin_unavailable'
